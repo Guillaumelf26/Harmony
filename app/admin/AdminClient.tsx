@@ -8,6 +8,11 @@ import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
 import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
 import { getChordsForKey } from "@/lib/chordsByKey";
+import {
+  toggleChordExtension,
+  getChordExtension,
+} from "@/lib/chordAtCursor";
+import type { ChordAtCursorInfo } from "@/components/EditorPane";
 
 type SongListItem = {
   id: string;
@@ -59,6 +64,9 @@ export default function AdminClient() {
   const [metaArtist, setMetaArtist] = useState("");
   const [metaKey, setMetaKey] = useState("");
   const [metaTags, setMetaTags] = useState("");
+  const [chordAtCursor, setChordAtCursor] = useState<ChordAtCursorInfo | null>(
+    null
+  );
   const editorRef = useRef<EditorPaneRef>(null);
 
   const debouncedText = useDebouncedValue(editorText, 200);
@@ -231,6 +239,21 @@ export default function AdminClient() {
     setDirty(true);
   }
 
+  function applyChordExtension(ext: "7" | "9" | "11") {
+    if (!chordAtCursor) return;
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const newChord = toggleChordExtension(chordAtCursor.chord, ext);
+    view.dispatch({
+      changes: {
+        from: chordAtCursor.start,
+        to: chordAtCursor.end,
+        insert: `[${newChord}]`,
+      },
+    });
+    setDirty(true);
+  }
+
   function onImportClick() {
     fileInputRef.current?.click();
   }
@@ -353,8 +376,18 @@ export default function AdminClient() {
                 <input
                   value={metaKey}
                   onChange={(e) => {
-                    setMetaKey(e.target.value);
+                    const newKey = e.target.value;
+                    setMetaKey(newKey);
                     setDirty(true);
+                    // Synchroniser {key: X} dans le chordpro
+                    const trimmed = newKey.trim();
+                    if (trimmed) {
+                      const keyLine = `{key: ${trimmed}}`;
+                      const replaced = editorText.replace(/\{key\s*:\s*[^}]*\}/gi, keyLine);
+                      setEditorText(replaced !== editorText ? replaced : (editorText ? `${keyLine}\n${editorText}` : keyLine));
+                    } else {
+                      setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
+                    }
                   }}
                   className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                 />
@@ -378,7 +411,7 @@ export default function AdminClient() {
               Accords rapides (tonalité {metaKey.trim() || "—"})
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {chordButtons.map((chord) => (
                   <button
                     key={chord}
@@ -389,6 +422,35 @@ export default function AdminClient() {
                     {chord}
                   </button>
                 ))}
+                {chordAtCursor && (
+                  <span className="flex items-center gap-1 border-l border-zinc-700 pl-2">
+                    <span className="text-xs text-zinc-500">
+                      +7/9/11 sur [{chordAtCursor.chord}]:
+                    </span>
+                    {(["7", "9", "11"] as const).map((ext) => {
+                      const active = getChordExtension(chordAtCursor.chord) === ext;
+                      return (
+                        <button
+                          key={ext}
+                          type="button"
+                          onClick={() => applyChordExtension(ext)}
+                          className={`rounded-lg px-2.5 py-1 text-sm font-medium transition ${
+                            active
+                              ? "bg-indigo-600 text-white"
+                              : "border border-zinc-700 bg-zinc-800 text-indigo-200 hover:bg-zinc-700"
+                          }`}
+                          title={
+                            active
+                              ? `Retirer le ${ext}`
+                              : `Ajouter ${ext} (remplace 7/9/11 existant)`
+                          }
+                        >
+                          {ext}
+                        </button>
+                      );
+                    })}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -409,6 +471,7 @@ export default function AdminClient() {
               setEditorText(v);
               setDirty(true);
             }}
+            onChordAtCursorChange={setChordAtCursor}
           />
         </div>
 

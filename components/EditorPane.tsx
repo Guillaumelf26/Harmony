@@ -1,15 +1,19 @@
 "use client";
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useMemo, useRef } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
+import { getChordAtCursor } from "@/lib/chordAtCursor";
+
+export type ChordAtCursorInfo = { chord: string; start: number; end: number };
 
 type Props = {
   value: string;
   onChange: (value: string) => void;
   height: string;
+  onChordAtCursorChange?: (info: ChordAtCursorInfo | null) => void;
 };
 
 export type EditorPaneRef = { view: EditorView | undefined };
@@ -20,15 +24,31 @@ function assignRef(ref: React.ForwardedRef<EditorPaneRef>, value: EditorPaneRef)
 }
 
 export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
-  { value, onChange, height },
+  { value, onChange, height, onChordAtCursorChange },
   ref
 ) {
+  const callbackRef = useRef(onChordAtCursorChange);
+  callbackRef.current = onChordAtCursorChange;
+
+  const chordExtension = useMemo(
+    () =>
+      EditorView.updateListener.of((update) => {
+        if (!update.selectionSet) return;
+        const pos = update.state.selection.main.from;
+        const doc = update.state.doc.toString();
+        const info = getChordAtCursor(pos, doc);
+        callbackRef.current?.(info);
+      }),
+    []
+  );
+
   const onCreator = useCallback(
     (view: EditorView) => {
       assignRef(ref, { view });
     },
     [ref]
   );
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/30">
       <div className="border-b border-zinc-800 px-3 py-2 text-xs text-zinc-400">
@@ -40,7 +60,10 @@ export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
         value={value}
         height={height}
         theme={oneDark}
-        extensions={[markdown()]}
+        extensions={[
+          markdown(),
+          ...(onChordAtCursorChange ? [chordExtension] : []),
+        ]}
         basicSetup={{
           lineNumbers: true,
           highlightActiveLineGutter: true,
