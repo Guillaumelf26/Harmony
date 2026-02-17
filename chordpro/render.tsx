@@ -54,7 +54,14 @@ function padRight(s: string, len: number) {
   return s + " ".repeat(len - s.length);
 }
 
-/** Preview : une grille 2 lignes (accords / paroles) par ligne ChordPro, une colonne par segment */
+/** Largeur en ch d'un segment (même logique pour accords et paroles pour aligner) */
+function segmentWidth(seg: ChordProSegment): number {
+  return seg.type === "lyric"
+    ? seg.text.length
+    : Math.max(2, seg.lyricAfter.length);
+}
+
+/** Preview : tableau 2 lignes (accords / paroles), une colonne par segment, alignement strict */
 export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
   return (
     <div className="text-sm leading-relaxed">
@@ -77,49 +84,43 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
             </div>
           );
         }
-        // Deux lignes (accords / paroles) en spans inline-block pour éviter tout espace entre segments
         const segments = line.segments;
         return (
-          <div key={idx} className="mb-1 font-mono text-sm">
-            <div className="leading-tight pt-0.5 pb-0 text-xs font-medium text-indigo-300">
-              {segments.map((seg, i) => {
-                const w =
-                  seg.type === "lyric"
-                    ? `${seg.text.length}ch`
-                    : `${Math.max(2, seg.lyricAfter.length)}ch`;
-                return (
-                  <span
+          <table
+            key={idx}
+            className="mb-1 table-fixed border-collapse font-mono text-sm"
+            style={{ width: "max-content", borderSpacing: 0 }}
+          >
+            <colgroup>
+              {segments.map((seg, i) => (
+                <col key={i} style={{ width: `${segmentWidth(seg)}ch` }} />
+              ))}
+            </colgroup>
+            <tbody>
+              <tr>
+                {segments.map((seg, i) => (
+                  <td
                     key={i}
-                    className="inline-block align-top"
-                    style={{ width: w, minWidth: w }}
+                    className="align-top overflow-hidden p-0 pr-0 text-indigo-300 font-medium"
+                    style={{ whiteSpace: "nowrap", verticalAlign: "bottom" }}
                   >
                     {seg.type === "chord" ? seg.chord : "\u00A0"}
-                  </span>
-                );
-              })}
-            </div>
-            <div className="leading-tight pb-0.5 break-words">
-              {segments.map((seg, i) => {
-                const w =
-                  seg.type === "lyric"
-                    ? `${seg.text.length}ch`
-                    : `${Math.max(2, seg.lyricAfter.length)}ch`;
-                return (
-                  <span
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                {segments.map((seg, i) => (
+                  <td
                     key={i}
-                    className="inline-block align-top"
-                    style={{
-                      width: w,
-                      minWidth: w,
-                      whiteSpace: "pre-wrap",
-                    }}
+                    className="align-top overflow-hidden p-0 pr-0 break-words"
+                    style={{ whiteSpace: "pre-wrap" }}
                   >
                     {seg.type === "lyric" ? seg.text : seg.lyricAfter}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         );
       })}
     </div>
