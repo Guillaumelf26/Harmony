@@ -56,22 +56,31 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
   const lines = renderChordProToLines(doc);
   return (
     <div className="text-sm leading-relaxed">
-      {lines.map(({ chords, lyrics }, idx) => (
-        <div key={idx} className="mb-1 font-mono text-sm">
-          <div
-            className="min-h-[1.2em] font-medium text-indigo-300"
-            style={{ whiteSpace: "pre" }}
-          >
-            {chords}
+      {lines.map(({ chords, lyrics }, idx) => {
+        const isEmpty = !chords && !lyrics;
+        return (
+          <div key={idx} className="mb-1 font-mono text-sm">
+            {isEmpty ? (
+              <div className="min-h-[1.5em]" aria-hidden="true" />
+            ) : (
+              <>
+                <div
+                  className="min-h-[1.2em] font-medium text-indigo-300"
+                  style={{ whiteSpace: "pre" }}
+                >
+                  {chords}
+                </div>
+                <div
+                  className="min-h-[1.2em]"
+                  style={{ whiteSpace: "pre" }}
+                >
+                  {lyrics}
+                </div>
+              </>
+            )}
           </div>
-          <div
-            className="min-h-[1.2em]"
-            style={{ whiteSpace: "pre" }}
-          >
-            {lyrics}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

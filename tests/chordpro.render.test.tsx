@@ -19,5 +19,15 @@ describe("renderChordProToLines", () => {
     expect(line!.lyrics).toBe("Hello");
     expect(line!.chords).toBe("     ");
   });
+
+  it("preserves empty lines between verses", () => {
+    const doc = parseChordPro("Verse 1\n\nVerse 2");
+    const lines = renderChordProToLines(doc);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]!.lyrics).toBe("Verse 1");
+    expect(lines[1]!.chords).toBe("");
+    expect(lines[1]!.lyrics).toBe("");
+    expect(lines[2]!.lyrics).toBe("Verse 2");
+  });
 });
 
