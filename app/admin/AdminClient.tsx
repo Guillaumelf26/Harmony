@@ -183,6 +183,16 @@ export default function AdminClient() {
     }
   }
 
+  function onRemoveChords() {
+    const ok = window.confirm(
+      "Effacer tous les accords entre crochets [xxx] du chant ? Les paroles seront conservées."
+    );
+    if (!ok) return;
+    const newText = editorText.replace(/\[[^\]]*\]/g, "");
+    setEditorText(newText);
+    setDirty(true);
+  }
+
   async function onDelete() {
     if (!selectedId) return;
     const ok = window.confirm("Supprimer ce chant ? Cette action est irréversible.");
@@ -263,6 +273,7 @@ export default function AdminClient() {
             onNew={onNew}
             onSave={onSave}
             onDelete={onDelete}
+            onRemoveChords={onRemoveChords}
             onExport={onExport}
             onImport={onImportClick}
           />
