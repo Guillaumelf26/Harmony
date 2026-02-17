@@ -61,7 +61,9 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
         return (
           <div key={idx} className="mb-1 font-mono text-sm">
             {isEmpty ? (
-              <div className="min-h-[1.5em]" aria-hidden="true" />
+              <div className="flex h-8 shrink-0 items-center" aria-hidden="true">
+                <span className="invisible">{"\u00A0"}</span>
+              </div>
             ) : (
               <>
                 <div
