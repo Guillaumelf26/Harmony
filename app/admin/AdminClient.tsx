@@ -8,10 +8,7 @@ import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
 import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
 import { getChordsForKey } from "@/lib/chordsByKey";
-import {
-  toggleChordExtension,
-  getChordExtension,
-} from "@/lib/chordAtCursor";
+import { appendChordExtension } from "@/lib/chordAtCursor";
 import type { ChordAtCursorInfo } from "@/components/EditorPane";
 
 type SongListItem = {
@@ -64,9 +61,8 @@ export default function AdminClient() {
   const [metaArtist, setMetaArtist] = useState("");
   const [metaKey, setMetaKey] = useState("");
   const [metaTags, setMetaTags] = useState("");
-  const [chordAtCursor, setChordAtCursor] = useState<ChordAtCursorInfo | null>(
-    null
-  );
+  const [pendingChordInfo, setPendingChordInfo] =
+    useState<ChordAtCursorInfo | null>(null);
   const editorRef = useRef<EditorPaneRef>(null);
 
   const debouncedText = useDebouncedValue(editorText, 200);
@@ -91,6 +87,7 @@ export default function AdminClient() {
     setMetaArtist(song.artist ?? "");
     setMetaKey(song.key ?? "");
     setMetaTags(tagsFromUnknown(song.tags).join(", "));
+    setPendingChordInfo(null);
     setDirty(false);
   }
 
@@ -125,6 +122,7 @@ export default function AdminClient() {
     setMetaKey("");
     setMetaTags("");
     setEditorText("{title: Nouveau chant}\n\n");
+    setPendingChordInfo(null);
     setDirty(true);
   }
 
@@ -215,6 +213,7 @@ export default function AdminClient() {
     setMetaArtist("");
     setMetaKey("");
     setMetaTags("");
+    setPendingChordInfo(null);
     setDirty(false);
     await refreshList();
   }
@@ -235,23 +234,40 @@ export default function AdminClient() {
     const view = editorRef.current?.view;
     if (!view) return;
     const { from, to } = view.state.selection.main;
-    view.dispatch({ changes: { from, to, insert: `[${chord}]` } });
+    const insertText = `[${chord}]`;
+    view.dispatch({ changes: { from, to, insert: insertText } });
     setDirty(true);
+    setPendingChordInfo({ chord, start: from, end: from + insertText.length });
+  }
+
+  function handleChordAtCursorChange(info: ChordAtCursorInfo | null) {
+    if (!pendingChordInfo) return;
+    if (!info || info.start !== pendingChordInfo.start) {
+      setPendingChordInfo(null);
+    } else {
+      setPendingChordInfo(info);
+    }
   }
 
   function applyChordExtension(ext: "7" | "9" | "11") {
-    if (!chordAtCursor) return;
+    if (!pendingChordInfo) return;
     const view = editorRef.current?.view;
     if (!view) return;
-    const newChord = toggleChordExtension(chordAtCursor.chord, ext);
+    const newChord = appendChordExtension(pendingChordInfo.chord, ext);
+    const newInsert = `[${newChord}]`;
     view.dispatch({
       changes: {
-        from: chordAtCursor.start,
-        to: chordAtCursor.end,
-        insert: `[${newChord}]`,
+        from: pendingChordInfo.start,
+        to: pendingChordInfo.end,
+        insert: newInsert,
       },
     });
     setDirty(true);
+    setPendingChordInfo({
+      chord: newChord,
+      start: pendingChordInfo.start,
+      end: pendingChordInfo.start + newInsert.length,
+    });
   }
 
   function onImportClick() {
@@ -422,33 +438,22 @@ export default function AdminClient() {
                     {chord}
                   </button>
                 ))}
-                {chordAtCursor && (
+                {pendingChordInfo && (
                   <span className="flex items-center gap-1 border-l border-zinc-700 pl-2">
                     <span className="text-xs text-zinc-500">
-                      +7/9/11 sur [{chordAtCursor.chord}]:
+                      +7/9/11 sur [{pendingChordInfo.chord}]:
                     </span>
-                    {(["7", "9", "11"] as const).map((ext) => {
-                      const active = getChordExtension(chordAtCursor.chord) === ext;
-                      return (
-                        <button
-                          key={ext}
-                          type="button"
-                          onClick={() => applyChordExtension(ext)}
-                          className={`rounded-lg px-2.5 py-1 text-sm font-medium transition ${
-                            active
-                              ? "bg-indigo-600 text-white"
-                              : "border border-zinc-700 bg-zinc-800 text-indigo-200 hover:bg-zinc-700"
-                          }`}
-                          title={
-                            active
-                              ? `Retirer le ${ext}`
-                              : `Ajouter ${ext} (remplace 7/9/11 existant)`
-                          }
-                        >
-                          {ext}
-                        </button>
-                      );
-                    })}
+                    {(["7", "9", "11"] as const).map((ext) => (
+                      <button
+                        key={ext}
+                        type="button"
+                        onClick={() => applyChordExtension(ext)}
+                        className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700"
+                        title={`Ajouter ${ext}`}
+                      >
+                        {ext}
+                      </button>
+                    ))}
                   </span>
                 )}
               </div>
@@ -471,7 +476,7 @@ export default function AdminClient() {
               setEditorText(v);
               setDirty(true);
             }}
-            onChordAtCursorChange={setChordAtCursor}
+            onChordAtCursorChange={handleChordAtCursorChange}
           />
         </div>
 
