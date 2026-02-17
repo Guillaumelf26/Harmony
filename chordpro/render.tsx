@@ -77,39 +77,49 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
             </div>
           );
         }
-        // Tableau 2 lignes × N colonnes : accord au-dessus de la parole, une colonne par segment
+        // Deux lignes (accords / paroles) en spans inline-block pour éviter tout espace entre segments
         const segments = line.segments;
         return (
-          <table key={idx} className="mb-1 border-collapse" style={{ width: "max-content" }}>
-            <tbody>
-              <tr>
-                {segments.map((seg, i) => (
-                  <td
+          <div key={idx} className="mb-1 font-mono text-sm">
+            <div className="leading-tight pt-0.5 pb-0 text-xs font-medium text-indigo-300">
+              {segments.map((seg, i) => {
+                const w =
+                  seg.type === "lyric"
+                    ? `${seg.text.length}ch`
+                    : `${Math.max(2, seg.lyricAfter.length)}ch`;
+                return (
+                  <span
                     key={i}
-                    className="align-top pt-0.5 pb-0 pr-0 text-xs font-medium text-indigo-300"
-                    style={{ width: "auto", minWidth: seg.type === "chord" ? "2ch" : undefined }}
+                    className="inline-block align-top"
+                    style={{ width: w, minWidth: w }}
                   >
                     {seg.type === "chord" ? seg.chord : "\u00A0"}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                {segments.map((seg, i) => (
-                  <td
+                  </span>
+                );
+              })}
+            </div>
+            <div className="leading-tight pb-0.5 break-words">
+              {segments.map((seg, i) => {
+                const w =
+                  seg.type === "lyric"
+                    ? `${seg.text.length}ch`
+                    : `${Math.max(2, seg.lyricAfter.length)}ch`;
+                return (
+                  <span
                     key={i}
-                    className="align-top pb-0.5 pr-0 break-words"
+                    className="inline-block align-top"
+                    style={{
+                      width: w,
+                      minWidth: w,
+                      whiteSpace: "pre-wrap",
+                    }}
                   >
-                    <span
-                      className="inline-block"
-                      style={{ whiteSpace: "pre-wrap" }}
-                    >
-                      {seg.type === "lyric" ? seg.text : seg.lyricAfter}
-                    </span>
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
+                    {seg.type === "lyric" ? seg.text : seg.lyricAfter}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         );
       })}
     </div>
