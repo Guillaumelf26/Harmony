@@ -17,11 +17,12 @@ Guide pas à pas à partir du moment où tu crées la base PostgreSQL dans Railw
 ## Étape 2 : Récupérer l’URL de la base (DATABASE_URL)
 
 1. Clique sur ce **service PostgreSQL** (la carte de la base).
-2. Ouvre l’onglet **"Variables"** (ou **"Connect"** / **"Connection"**).
-3. Tu dois voir une variable **`DATABASE_URL`** (ou **`DATABASE_PRIVATE_URL`** selon les versions).
-4. **Copie** sa valeur (elle ressemble à :  
-   `postgresql://postgres:MotDePasse@containers-us-west-xxx.railway.app:5432/railway`).  
-   Garde-la sous la main pour l’étape suivante.
+2. Ouvre l’onglet **"Variables"** ou **"Connect"**.
+3. Railway affiche souvent **deux** URLs :
+   - **Interne** : host `postgres.railway.internal` → à utiliser **uniquement pour le service app sur Railway** (Variables du service Harmony).
+   - **Publique** : host en `*.railway.app` ou `*.rlwy.net` → à utiliser pour **les migrations depuis ton PC** (et optionnellement pour l’app).
+4. Pour l’**app sur Railway** : tu peux utiliser l’URL interne (référence de variable) ou l’URL publique.
+5. Pour les **migrations en local** (étape 6) : tu **dois** utiliser l’URL **publique**. Si tu ne vois qu’une seule URL et que c’est `postgres.railway.internal`, ouvre l’onglet **"Connect"** et cherche une connexion "Public" / "External", ou une variable **`DATABASE_PUBLIC_URL`**.
 
 ---
 
@@ -78,29 +79,30 @@ Sur ton PC, à la racine du projet Harmony :
 
 Railway ne lance pas les commandes Prisma. Tu dois les lancer **une fois** avec l’URL de la base Railway.
 
-1. Sur Railway, rouvre le service **PostgreSQL** → onglet **Variables** et **recopie** `DATABASE_URL`.
-2. Sur ton PC, ouvre un **terminal** à la racine du projet Harmony.
-3. **Sous PowerShell** (Windows) :
+**Important** : depuis ton PC, l’URL **interne** (`postgres.railway.internal`) ne fonctionne pas. Il faut utiliser l’**URL publique** (host en `*.railway.app` ou `*.rlwy.net`).
+
+1. Sur Railway, rouvre le service **PostgreSQL** → onglet **"Connect"** ou **Variables**.
+2. **Recopie l’URL PUBLIQUE** (pas celle avec `postgres.railway.internal`). Si tu ne vois que l’interne, dans **Connect** regarde s’il y a un onglet ou un lien "Public network" / "External".
+3. Sur ton PC, ouvre un **terminal** à la racine du projet Harmony.
+4. **Sous PowerShell** (Windows) :
    ```powershell
    $env:DATABASE_URL="postgresql://..."
    ```
    Colle à la place de `postgresql://...` **toute** l’URL copiée (entre guillemets).
-4. Lance les migrations :
+5. Lance les migrations :
    ```bash
    npx prisma migrate deploy
    ```
    Tu dois voir quelque chose comme : `Applied 1 migration(s).`
-5. Crée le compte admin (seed) :
-   ```bash
-   npm run db:seed
-   ```
-   Avec les variables que tu as mises sur Railway, le seed utilise `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` **en local** seulement si tu les définis. Sinon il utilise les valeurs par défaut. Pour être sûr d’utiliser les bons identifiants, tu peux faire :
+6. Crée le compte admin (seed) **avec les mêmes identifiants que sur Railway** :
+   - En local, le seed lit `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` depuis l’environnement. Si tu ne les définis pas, il utilise `admin@example.com` / `admin1234` et ta connexion en ligne échouera.
+   - **À faire** : définir les variables puis lancer le seed (remplace par ton email et ton mot de passe) :
    ```powershell
    $env:SEED_ADMIN_EMAIL="ton@email.com"
    $env:SEED_ADMIN_PASSWORD="TonMotDePasse"
    npm run db:seed
    ```
-   (Remplace par les mêmes valeurs que dans Railway.)
+   Utilise **exactement** le même email et le même mot de passe que les variables `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` du service app sur Railway.
 
 À partir de là, la base en ligne a les tables et un utilisateur admin.
 
@@ -145,3 +147,36 @@ Railway ne lance pas les commandes Prisma. Tu dois les lancer **une fois** avec 
 | 8 | Navigateur | Ouvrir l’URL → /login → se connecter avec ton email et mot de passe admin |
 
 Si une étape ne marche pas (erreur de build, de migration ou à la connexion), note le **numéro de l’étape** et le **message d’erreur** et on pourra corriger précisément.
+
+---
+
+## Recréer l’admin (identifiants invalides)
+
+Si tu as le message **« Identifiants invalides »** en te connectant sur l’app déployée, c’est souvent parce que le seed a été lancé **sans** les bonnes variables (donc le compte créé est `admin@example.com` / `admin1234` au lieu du tien). Tu peux refaire uniquement le seed :
+
+1. **Vérifier les variables sur Railway**  
+   Service **app** → **Variables** : note les valeurs exactes de `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` (ce sont celles que tu dois utiliser pour te connecter).
+
+2. **Sur ton PC**, ouvre un terminal à la racine du projet.
+
+3. **Définir l’URL publique de la base** (comme à l’étape 6) :
+   ```powershell
+   $env:DATABASE_URL="postgresql://..."
+   ```
+   (Colle l’URL **publique** du service PostgreSQL Railway.)
+
+4. **Définir email et mot de passe** (les **mêmes** que sur Railway) :
+   ```powershell
+   $env:SEED_ADMIN_EMAIL="ton@email.com"
+   $env:SEED_ADMIN_PASSWORD="TonMotDePasse"
+   ```
+
+5. **Relancer le seed** :
+   ```powershell
+   npm run db:seed
+   ```
+   Tu dois voir : `Seeded admin user: ton@email.com`.
+
+6. **Réessayer de te connecter** sur l’URL publique de l’app avec ce même email et ce même mot de passe.
+
+Si ça échoue encore, vérifie que `NEXTAUTH_URL` sur Railway est bien l’URL publique de l’app (avec `https://`) et que `NEXTAUTH_SECRET` est défini.

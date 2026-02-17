@@ -86,7 +86,7 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
                 {segments.map((seg, i) => (
                   <td
                     key={i}
-                    className="align-top pt-0.5 pb-0 pr-1 text-xs font-medium text-indigo-300"
+                    className="align-top pt-0.5 pb-0 pr-0 text-xs font-medium text-indigo-300"
                     style={{ width: "auto", minWidth: seg.type === "chord" ? "2ch" : undefined }}
                   >
                     {seg.type === "chord" ? seg.chord : "\u00A0"}
@@ -97,7 +97,7 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
                 {segments.map((seg, i) => (
                   <td
                     key={i}
-                    className="align-top pb-0.5 pr-1 break-words"
+                    className="align-top pb-0.5 pr-0 break-words"
                   >
                     <span
                       className="inline-block"
