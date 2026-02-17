@@ -6,7 +6,8 @@ import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
 import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
-import { EditorPane } from "@/components/EditorPane";
+import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
+import { getChordsForKey } from "@/lib/chordsByKey";
 
 type SongListItem = {
   id: string;
@@ -58,9 +59,11 @@ export default function AdminClient() {
   const [metaArtist, setMetaArtist] = useState("");
   const [metaKey, setMetaKey] = useState("");
   const [metaTags, setMetaTags] = useState("");
+  const editorRef = useRef<EditorPaneRef>(null);
 
   const debouncedText = useDebouncedValue(editorText, 200);
   const previewDoc = useMemo(() => parseChordPro(debouncedText), [debouncedText]);
+  const chordButtons = useMemo(() => getChordsForKey(metaKey), [metaKey]);
 
   async function refreshList() {
     const res = await fetch(`/api/songs?query=${encodeURIComponent(query)}`, { cache: "no-store" });
@@ -210,6 +213,14 @@ export default function AdminClient() {
     URL.revokeObjectURL(url);
   }
 
+  function insertChordAtCursor(chord: string) {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    view.dispatch({ changes: { from, to, insert: `[${chord}]` } });
+    setDirty(true);
+  }
+
   function onImportClick() {
     fileInputRef.current?.click();
   }
@@ -322,7 +333,26 @@ export default function AdminClient() {
             </div>
           </div>
 
+          {chordButtons.length > 0 && (
+            <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+              <div className="mb-2 text-xs text-zinc-400">Accords rapides (tonalité {metaKey.trim() || "—"})</div>
+              <div className="flex flex-wrap gap-2">
+                {chordButtons.map((chord) => (
+                  <button
+                    key={chord}
+                    type="button"
+                    onClick={() => insertChordAtCursor(chord)}
+                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
+                  >
+                    {chord}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <EditorPane
+            ref={editorRef}
             value={editorText}
             height={"calc(100vh - 160px)"}
             onChange={(v) => {
