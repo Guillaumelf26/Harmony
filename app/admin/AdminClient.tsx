@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
@@ -63,11 +64,48 @@ export default function AdminClient() {
   const [metaTags, setMetaTags] = useState("");
   const [activeChordInfo, setActiveChordInfo] =
     useState<ChordAtCursorInfo | null>(null);
+  const [popupCoords, setPopupCoords] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+  const POPUP_GAP = 8;
   const editorRef = useRef<EditorPaneRef>(null);
 
   const debouncedText = useDebouncedValue(editorText, 200);
   const previewDoc = useMemo(() => parseChordPro(debouncedText), [debouncedText]);
   const chordButtons = useMemo(() => getChordsForKey(metaKey), [metaKey]);
+
+  const updatePopupPosition = useCallback(() => {
+    if (!activeChordInfo) {
+      setPopupCoords(null);
+      return;
+    }
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const coords = view.coordsAtPos(activeChordInfo.start);
+    if (!coords) {
+      setPopupCoords(null);
+      return;
+    }
+    const centerX = (coords.left + coords.right) / 2;
+    setPopupCoords({ left: centerX, top: coords.top });
+  }, [activeChordInfo]);
+
+  useEffect(() => {
+    if (!activeChordInfo) {
+      setPopupCoords(null);
+      return;
+    }
+    updatePopupPosition();
+    const onScroll = () => updatePopupPosition();
+    const view = editorRef.current?.view;
+    view?.scrollDOM?.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      view?.scrollDOM?.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [activeChordInfo, updatePopupPosition]);
 
   async function refreshList() {
     const res = await fetch(`/api/songs?query=${encodeURIComponent(query)}`, { cache: "no-store" });
@@ -432,24 +470,6 @@ export default function AdminClient() {
                     {chord}
                   </button>
                 ))}
-                {activeChordInfo && (
-                  <span className="flex items-center gap-1 border-l border-zinc-700 pl-2">
-                    <span className="text-xs text-zinc-500">
-                      +7/9/11 sur [{activeChordInfo.chord}]:
-                    </span>
-                    {(["7", "9", "11"] as const).map((ext) => (
-                      <button
-                        key={ext}
-                        type="button"
-                        onClick={() => applyChordExtension(ext)}
-                        className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700"
-                        title={`Ajouter ${ext}`}
-                      >
-                        {ext}
-                      </button>
-                    ))}
-                  </span>
-                )}
               </div>
               <button
                 type="button"
@@ -494,6 +514,33 @@ export default function AdminClient() {
         multiple
         onChange={(e) => void onImportFiles(e.target.files)}
       />
+
+      {typeof document !== "undefined" &&
+        activeChordInfo &&
+        popupCoords &&
+        createPortal(
+          <div
+            className="fixed z-50 flex gap-1 rounded-lg border border-zinc-600 bg-zinc-800 px-2 py-1.5 shadow-xl"
+            style={{
+              left: popupCoords.left,
+              top: popupCoords.top - POPUP_GAP,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            {(["7", "9", "11"] as const).map((ext) => (
+              <button
+                key={ext}
+                type="button"
+                onClick={() => applyChordExtension(ext)}
+                className="rounded px-2 py-1 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
+                title={`Ajouter ${ext}`}
+              >
+                {ext}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
