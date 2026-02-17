@@ -1,8 +1,4 @@
-import type {
-  ChordProDocument,
-  ChordProLine,
-  ChordProSegment,
-} from "./parse";
+import type { ChordProDocument, ChordProLine } from "./parse";
 
 type RenderLine = { chords: string; lyrics: string };
 
@@ -46,6 +42,7 @@ function renderTextLine(line: Extract<ChordProLine, { type: "text" }>): RenderLi
     chordLine = padRight(chordLine, lyricLine.length);
   }
   chordLine = padRight(chordLine, lyricLine.length);
+  lyricLine = padRight(lyricLine, chordLine.length);
   return { chords: chordLine, lyrics: lyricLine };
 }
 
@@ -54,75 +51,27 @@ function padRight(s: string, len: number) {
   return s + " ".repeat(len - s.length);
 }
 
-/** Largeur en ch d'un segment (même logique pour accords et paroles pour aligner) */
-function segmentWidth(seg: ChordProSegment): number {
-  return seg.type === "lyric"
-    ? seg.text.length
-    : Math.max(2, seg.lyricAfter.length);
-}
-
-/** Preview : tableau 2 lignes (accords / paroles), une colonne par segment, alignement strict */
+/** Preview : 2 lignes par ligne de texte (accords puis paroles), alignement par caractères en monospace */
 export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
+  const lines = renderChordProToLines(doc);
   return (
     <div className="text-sm leading-relaxed">
-      {doc.lines.map((line, idx) => {
-        if (line.type === "empty") {
-          return <div key={idx} className="min-h-[1.5em]" />;
-        }
-        if (line.type === "directive") {
-          const label =
-            line.directive.type === "title"
-              ? "Titre"
-              : line.directive.type === "artist"
-                ? "Artiste"
-                : line.directive.type === "key"
-                  ? "Tonalité"
-                  : line.directive.name;
-          return (
-            <div key={idx} className="py-0.5 text-zinc-400">
-              {label}: {line.directive.value}
-            </div>
-          );
-        }
-        const segments = line.segments;
-        return (
-          <table
-            key={idx}
-            className="mb-1 table-fixed border-collapse font-mono text-sm"
-            style={{ width: "max-content", borderSpacing: 0 }}
+      {lines.map(({ chords, lyrics }, idx) => (
+        <div key={idx} className="mb-1 font-mono text-sm">
+          <div
+            className="min-h-[1.2em] font-medium text-indigo-300"
+            style={{ whiteSpace: "pre" }}
           >
-            <colgroup>
-              {segments.map((seg, i) => (
-                <col key={i} style={{ width: `${segmentWidth(seg)}ch` }} />
-              ))}
-            </colgroup>
-            <tbody>
-              <tr>
-                {segments.map((seg, i) => (
-                  <td
-                    key={i}
-                    className="align-top overflow-hidden p-0 pr-0 text-indigo-300 font-medium"
-                    style={{ whiteSpace: "nowrap", verticalAlign: "bottom" }}
-                  >
-                    {seg.type === "chord" ? seg.chord : "\u00A0"}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                {segments.map((seg, i) => (
-                  <td
-                    key={i}
-                    className="align-top overflow-hidden p-0 pr-0 break-words"
-                    style={{ whiteSpace: "pre-wrap" }}
-                  >
-                    {seg.type === "lyric" ? seg.text : seg.lyricAfter}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        );
-      })}
+            {chords}
+          </div>
+          <div
+            className="min-h-[1.2em]"
+            style={{ whiteSpace: "pre" }}
+          >
+            {lyrics}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
