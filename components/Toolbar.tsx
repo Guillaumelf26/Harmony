@@ -5,7 +5,6 @@ type Props = {
   onNew: () => void;
   onSave: () => void;
   onDelete: () => void;
-  onRemoveChords: () => void;
   onExport: () => void;
   onImport: () => void;
 };
@@ -17,7 +16,6 @@ export function Toolbar({
   onNew,
   onSave,
   onDelete,
-  onRemoveChords,
   onExport,
   onImport,
 }: Props) {
@@ -53,13 +51,6 @@ export function Toolbar({
           className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900 disabled:opacity-60"
         >
           Delete
-        </button>
-        <button
-          onClick={onRemoveChords}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900"
-          title="Supprimer tous les accords [xxx] du chant"
-        >
-          Effacer accords
         </button>
         <button
           onClick={onImport}

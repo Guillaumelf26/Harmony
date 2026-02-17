@@ -273,7 +273,6 @@ export default function AdminClient() {
             onNew={onNew}
             onSave={onSave}
             onDelete={onDelete}
-            onRemoveChords={onRemoveChords}
             onExport={onExport}
             onImport={onImportClick}
           />
@@ -344,9 +343,21 @@ export default function AdminClient() {
             </div>
           </div>
 
-          {chordButtons.length > 0 && (
-            <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
-              <div className="mb-2 text-xs text-zinc-400">Accords rapides (tonalité {metaKey.trim() || "—"})</div>
+          <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="text-xs text-zinc-400">
+                Accords rapides (tonalité {metaKey.trim() || "—"})
+              </div>
+              <button
+                type="button"
+                onClick={onRemoveChords}
+                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
+                title="Supprimer tous les accords [xxx] du chant"
+              >
+                Effacer accords
+              </button>
+            </div>
+            {chordButtons.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {chordButtons.map((chord) => (
                   <button
@@ -359,8 +370,8 @@ export default function AdminClient() {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <EditorPane
             ref={editorRef}
