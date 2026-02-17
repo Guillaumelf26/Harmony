@@ -61,7 +61,7 @@ export default function AdminClient() {
   const [metaArtist, setMetaArtist] = useState("");
   const [metaKey, setMetaKey] = useState("");
   const [metaTags, setMetaTags] = useState("");
-  const [pendingChordInfo, setPendingChordInfo] =
+  const [activeChordInfo, setActiveChordInfo] =
     useState<ChordAtCursorInfo | null>(null);
   const editorRef = useRef<EditorPaneRef>(null);
 
@@ -87,7 +87,7 @@ export default function AdminClient() {
     setMetaArtist(song.artist ?? "");
     setMetaKey(song.key ?? "");
     setMetaTags(tagsFromUnknown(song.tags).join(", "));
-    setPendingChordInfo(null);
+    setActiveChordInfo(null);
     setDirty(false);
   }
 
@@ -122,7 +122,7 @@ export default function AdminClient() {
     setMetaKey("");
     setMetaTags("");
     setEditorText("{title: Nouveau chant}\n\n");
-    setPendingChordInfo(null);
+    setActiveChordInfo(null);
     setDirty(true);
   }
 
@@ -213,7 +213,7 @@ export default function AdminClient() {
     setMetaArtist("");
     setMetaKey("");
     setMetaTags("");
-    setPendingChordInfo(null);
+    setActiveChordInfo(null);
     setDirty(false);
     await refreshList();
   }
@@ -237,36 +237,30 @@ export default function AdminClient() {
     const insertText = `[${chord}]`;
     view.dispatch({ changes: { from, to, insert: insertText } });
     setDirty(true);
-    setPendingChordInfo({ chord, start: from, end: from + insertText.length });
   }
 
   function handleChordAtCursorChange(info: ChordAtCursorInfo | null) {
-    if (!pendingChordInfo) return;
-    if (!info || info.start !== pendingChordInfo.start) {
-      setPendingChordInfo(null);
-    } else {
-      setPendingChordInfo(info);
-    }
+    setActiveChordInfo(info);
   }
 
   function applyChordExtension(ext: "7" | "9" | "11") {
-    if (!pendingChordInfo) return;
+    if (!activeChordInfo) return;
     const view = editorRef.current?.view;
     if (!view) return;
-    const newChord = appendChordExtension(pendingChordInfo.chord, ext);
+    const newChord = appendChordExtension(activeChordInfo.chord, ext);
     const newInsert = `[${newChord}]`;
     view.dispatch({
       changes: {
-        from: pendingChordInfo.start,
-        to: pendingChordInfo.end,
+        from: activeChordInfo.start,
+        to: activeChordInfo.end,
         insert: newInsert,
       },
     });
     setDirty(true);
-    setPendingChordInfo({
+    setActiveChordInfo({
       chord: newChord,
-      start: pendingChordInfo.start,
-      end: pendingChordInfo.start + newInsert.length,
+      start: activeChordInfo.start,
+      end: activeChordInfo.start + newInsert.length,
     });
   }
 
@@ -438,10 +432,10 @@ export default function AdminClient() {
                     {chord}
                   </button>
                 ))}
-                {pendingChordInfo && (
+                {activeChordInfo && (
                   <span className="flex items-center gap-1 border-l border-zinc-700 pl-2">
                     <span className="text-xs text-zinc-500">
-                      +7/9/11 sur [{pendingChordInfo.chord}]:
+                      +7/9/11 sur [{activeChordInfo.chord}]:
                     </span>
                     {(["7", "9", "11"] as const).map((ext) => (
                       <button
