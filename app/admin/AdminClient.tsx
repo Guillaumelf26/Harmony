@@ -235,19 +235,49 @@ export default function AdminClient() {
     fileInputRef.current?.click();
   }
 
-  async function onImportFile(file: File | null) {
-    if (!file) return;
-    const text = await file.text();
-    const parsed = parseChordPro(text);
-    // Import = nouveau chant (ne pas écraser la sélection)
-    setSelectedId(null);
-    setSelectedSong(null);
-    setEditorText(text);
-    setMetaTitle(parsed.title ?? "");
-    setMetaArtist(parsed.artist ?? "");
-    setMetaKey(parsed.key ?? "");
-    setMetaTags("");
-    setDirty(true);
+  async function onImportFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    if (dirty) {
+      const ok = window.confirm("Changements non sauvegardés. Importer quand même ?");
+      if (!ok) return;
+    }
+    const fileArray = Array.from(files);
+    setSaving(true);
+    try {
+      let firstCreatedId: string | null = null;
+      let imported = 0;
+      for (const file of fileArray) {
+        const text = await file.text();
+        const parsed = parseChordPro(text);
+        const title = parsed.title?.trim() || file.name.replace(/\.(txt|chordpro|pro)$/i, "") || "Sans titre";
+        const artist = parsed.artist?.trim() ?? null;
+        const key = parsed.key?.trim() ?? null;
+        const res = await fetch("/api/songs", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            title,
+            artist,
+            key,
+            tags: [],
+            chordproText: text,
+          }),
+        });
+        if (res.ok) {
+          imported += 1;
+          const created = (await res.json()) as Song;
+          if (!firstCreatedId) firstCreatedId = created.id;
+        }
+      }
+      await refreshList();
+      if (firstCreatedId) await loadSong(firstCreatedId);
+      if (imported < fileArray.length) {
+        window.alert(`${imported} chant(s) importé(s) sur ${fileArray.length}. Certains ont peut-être échoué.`);
+      }
+    } finally {
+      setSaving(false);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   useEffect(() => {
@@ -344,20 +374,10 @@ export default function AdminClient() {
           </div>
 
           <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-xs text-zinc-400">
-                Accords rapides (tonalité {metaKey.trim() || "—"})
-              </div>
-              <button
-                type="button"
-                onClick={onRemoveChords}
-                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
-                title="Supprimer tous les accords [xxx] du chant"
-              >
-                Effacer accords
-              </button>
+            <div className="mb-2 text-xs text-zinc-400">
+              Accords rapides (tonalité {metaKey.trim() || "—"})
             </div>
-            {chordButtons.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-2">
                 {chordButtons.map((chord) => (
                   <button
@@ -370,7 +390,15 @@ export default function AdminClient() {
                   </button>
                 ))}
               </div>
-            )}
+              <button
+                type="button"
+                onClick={onRemoveChords}
+                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100 shrink-0"
+                title="Supprimer tous les accords [xxx] du chant"
+              >
+                Effacer accords
+              </button>
+            </div>
           </div>
 
           <EditorPane
@@ -401,7 +429,8 @@ export default function AdminClient() {
         type="file"
         accept=".txt,.chordpro,.pro"
         className="hidden"
-        onChange={(e) => void onImportFile(e.target.files?.item(0) ?? null)}
+        multiple
+        onChange={(e) => void onImportFiles(e.target.files)}
       />
     </div>
   );
