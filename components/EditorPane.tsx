@@ -33,7 +33,6 @@ export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
   const chordExtension = useMemo(
     () =>
       EditorView.updateListener.of((update) => {
-        if (!update.selectionSet) return;
         const pos = update.state.selection.main.from;
         const doc = update.state.doc.toString();
         const info = getChordAtCursor(pos, doc);

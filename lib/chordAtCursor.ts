@@ -1,23 +1,19 @@
 /**
- * Trouve l'accord [xxx] contenant ou adjacent à la position pos.
+ * Trouve l'accord [xxx] contenant la position pos.
+ * Retourne null si le curseur n'est pas à l'intérieur d'un accord.
  */
 export function getChordAtCursor(
   pos: number,
   doc: string
 ): { chord: string; start: number; end: number } | null {
-  const before = doc.slice(0, pos);
-  const after = doc.slice(pos);
-  const lastOpen = before.lastIndexOf("[");
-  const firstClose = after.indexOf("]");
-  if (lastOpen === -1 || firstClose === -1) return null;
-  const closePos = pos + firstClose;
-  if (closePos < lastOpen) return null;
-  const chordEnd = closePos + 1;
-  const chordContent = doc.slice(lastOpen + 1, closePos);
-  if (pos >= lastOpen && pos <= chordEnd) {
-    return { chord: chordContent, start: lastOpen, end: chordEnd };
-  }
-  return null;
+  const lastOpen = doc.slice(0, pos + 1).lastIndexOf("[");
+  if (lastOpen === -1) return null;
+  const endBracket = doc.indexOf("]", lastOpen);
+  if (endBracket === -1) return null;
+  const chordEnd = endBracket + 1;
+  if (pos < lastOpen || pos > endBracket) return null;
+  const chordContent = doc.slice(lastOpen + 1, endBracket);
+  return { chord: chordContent, start: lastOpen, end: chordEnd };
 }
 
 /**
