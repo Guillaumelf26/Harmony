@@ -575,11 +575,6 @@ export default function AdminClient() {
               Preview live
             </div>
             <div className="h-[calc(100vh-160px)] overflow-auto p-3">
-              {selectedSong?.audioUrl && (
-                <div className="mb-3">
-                  <audio src={selectedSong.audioUrl} controls className="w-full h-10" />
-                </div>
-              )}
               <ChordProPreview doc={previewDoc} />
             </div>
           </div>
