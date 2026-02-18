@@ -543,7 +543,7 @@ export default function AdminClient() {
 
       {/* Zone principale : flex-1 min-w-0 pour éviter débordement */}
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-        <header className="flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
+        <header className="relative z-10 flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
           <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
             type="button"

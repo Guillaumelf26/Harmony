@@ -52,7 +52,7 @@ export function SessionMenu() {
         {initial}
       </button>
       {open ? (
-        <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+        <div className="absolute right-0 top-full mt-2 z-[100] min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
           <Link
             href="/admin/settings"
             onClick={() => setOpen(false)}
