@@ -458,20 +458,27 @@ export default function AdminClient() {
 
   return (
     <div className="flex min-h-svh overflow-hidden text-zinc-900 dark:text-zinc-100">
-      {/* Background style Fretlist : cercles floutés (pas d'image) */}
+      {/* Background style Fretlist/Cisco : cercles floutés light + dark */}
       <div
-        className="fixed inset-0 -z-10 bg-zinc-50 dark:bg-[#030712]"
+        className="fixed inset-0 -z-10 bg-white dark:bg-[#030712]"
         aria-hidden
       >
-        {/* Cercles floutés teal/pink/purple/orange (visible en dark mode) */}
+        {/* Cercles floutés pastels (thème clair, style Cisco) */}
+        <div className="block dark:hidden fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-teal-200/40 blur-[120px]" />
+          <div className="absolute top-1/3 -right-20 w-[400px] h-[400px] rounded-full bg-accent-200/30 blur-[100px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] rounded-full bg-accent-200/25 blur-[110px]" />
+          <div className="absolute -bottom-20 right-1/3 w-[480px] h-[480px] rounded-full bg-amber-200/20 blur-[100px]" />
+        </div>
+        {/* Cercles floutés accent (thème sombre) */}
         <div className="hidden dark:block fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-teal-500/20 blur-[120px]" />
           <div className="absolute top-1/3 -right-20 w-[400px] h-[400px] rounded-full bg-pink-500/15 blur-[100px]" />
-          <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] rounded-full bg-purple-500/15 blur-[110px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] rounded-full bg-accent-500/15 blur-[110px]" />
           <div className="absolute -bottom-20 right-1/3 w-[480px] h-[480px] rounded-full bg-orange-500/10 blur-[100px]" />
         </div>
         {/* Overlay bruit subtil (style Fretlist) */}
-        <div className="noise-overlay pointer-events-none fixed inset-0 hidden dark:block" aria-hidden />
+        <div className="noise-overlay pointer-events-none fixed inset-0" aria-hidden />
       </div>
 
       {/* Sidebar gauche : dans le flux flex (style Fretlist), pas en overlay */}
@@ -569,7 +576,7 @@ export default function AdminClient() {
                       setMetaTitle(e.target.value);
                       setDirty(true);
                     }}
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
                   />
                 </label>
                 <label className="flex-1 min-w-0 space-y-2">
@@ -581,13 +588,13 @@ export default function AdminClient() {
                       setDirty(true);
                     }}
                     placeholder="Laisser vide pour les originaux"
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
                   />
                 </label>
               </div>
 
               {/* Song Details collapsible (style Fretlist) */}
-              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 overflow-hidden">
+              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setDetailsExpanded((v) => !v)}
@@ -633,7 +640,7 @@ export default function AdminClient() {
                             setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
                           }
                         }}
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
                       />
                     </label>
 
@@ -645,7 +652,7 @@ export default function AdminClient() {
                           setMetaTags(e.target.value);
                           setDirty(true);
                         }}
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
                       />
                     </label>
                     <label className="block">
@@ -659,14 +666,14 @@ export default function AdminClient() {
                             setDirty(true);
                           }}
                           placeholder="https://www.youtube.com/watch?v=..."
-                          className={`w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors ${metaReferenceUrl.trim() ? "pr-10" : ""}`}
+                          className={`w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors ${metaReferenceUrl.trim() ? "pr-10" : ""}`}
                         />
                         {metaReferenceUrl.trim() ? (
                           <a
                             href={metaReferenceUrl.trim().startsWith("http") ? metaReferenceUrl.trim() : `https://${metaReferenceUrl.trim()}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-accent-600 dark:text-accent-400 hover:bg-accent-500/10 transition-colors"
                             title="Ouvrir le lien"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -690,7 +697,7 @@ export default function AdminClient() {
                           <button
                             type="button"
                             onClick={() => void onDeleteAudio()}
-                            className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                            className="rounded-md border border-accent-500/30 dark:border-accent-400/30 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs text-accent-600 dark:text-accent-300 hover:bg-accent-50 dark:hover:bg-accent-950/30 transition-colors"
                           >
                             Supprimer
                           </button>
@@ -708,7 +715,7 @@ export default function AdminClient() {
                             type="button"
                             onClick={() => audioInputRef.current?.click()}
                             disabled={!selectedId || uploadingAudio}
-                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-200 disabled:opacity-50"
+                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-accent-600 dark:text-accent-200 disabled:opacity-50"
                           >
                             {uploadingAudio ? "Upload..." : "Upload audio"}
                           </button>
@@ -721,7 +728,7 @@ export default function AdminClient() {
               </div>
 
               {/* Accords rapides */}
-              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 overflow-hidden">
+              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 overflow-hidden">
                 <div className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Accords rapides (tonalité {metaKey.trim() || "—"})
                 </div>
@@ -732,7 +739,7 @@ export default function AdminClient() {
                         key={chord}
                         type="button"
                         onClick={() => insertChordAtCursor(chord)}
-                        className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-500/50 transition-colors"
+                        className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white transition-all"
                       >
                         {chord}
                       </button>
@@ -741,7 +748,7 @@ export default function AdminClient() {
                   <button
                     type="button"
                     onClick={onRemoveChords}
-                    className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm shrink-0 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-500/50 transition-colors"
+                    className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white shrink-0 transition-all"
                     title="Supprimer tous les accords [xxx] du chant"
                   >
                     Effacer accords
@@ -837,7 +844,7 @@ export default function AdminClient() {
         popupCoords &&
         createPortal(
           <div
-            className="fixed z-50 flex gap-1 rounded-lg border border-indigo-500/40 dark:border-indigo-400/40 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md px-2 py-1.5 shadow-xl shadow-indigo-500/10"
+            className="fixed z-50 flex gap-1 rounded-lg bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md px-2 py-1.5 shadow-xl"
             style={{
               left: popupCoords.left,
               top: popupCoords.top - POPUP_GAP,
@@ -849,7 +856,7 @@ export default function AdminClient() {
                 key={ext}
                 type="button"
                 onClick={() => applyChordExtension(ext)}
-                className="rounded px-2 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-300 transition hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-100"
+                className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white transition-all"
                 title={`Ajouter ${ext}`}
               >
                 {ext}

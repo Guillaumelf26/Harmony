@@ -42,7 +42,7 @@ export function Toolbar({
         <button
           onClick={onSave}
           disabled={saving || !dirty}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-60 disabled:from-indigo-500 disabled:to-indigo-600 transition-all"
+          className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:from-accent-600 hover:to-accent-700 disabled:opacity-60 disabled:from-accent-500 disabled:to-accent-600 transition-all"
           title="Ctrl/Cmd+S"
         >
           Save

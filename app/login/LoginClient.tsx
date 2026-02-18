@@ -70,7 +70,7 @@ export default function LoginClient() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-2 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500"
               autoComplete="email"
               required
             />
@@ -82,7 +82,7 @@ export default function LoginClient() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-2 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500"
               autoComplete="current-password"
               required
             />
@@ -97,7 +97,7 @@ export default function LoginClient() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-2 text-sm font-medium text-white hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-60 disabled:from-indigo-500 disabled:to-indigo-600 transition-all"
+            className="w-full rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-2 text-sm font-medium text-white hover:from-accent-600 hover:to-accent-700 disabled:opacity-60 disabled:from-accent-500 disabled:to-accent-600 transition-all"
           >
             {isPending ? "Connexion..." : "Se connecter"}
           </button>

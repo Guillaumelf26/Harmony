@@ -31,7 +31,7 @@ export function SidebarSongList({
   overlay = false,
 }: Props) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-white/50 dark:bg-zinc-950/30">
+    <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-white/90 dark:bg-zinc-950/30">
       <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
         <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Chants</div>
         <button
@@ -57,7 +57,7 @@ export function SidebarSongList({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Recherche titre / artiste"
-              className="flex-1 min-w-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+              className="flex-1 min-w-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
             />
             {onNew ? (
               <button
@@ -77,7 +77,7 @@ export function SidebarSongList({
         </div>
       )}
 
-      <div className={`flex-1 min-h-0 overflow-auto ${collapsed ? "p-2" : "px-2 pb-2"}`}>
+      <div className={`flex-1 min-h-0 overflow-auto space-y-1 ${collapsed ? "p-2" : "px-2 pb-2"}`}>
         {songs.length === 0 ? (
           <div className="px-2 py-3 text-xs text-zinc-500 dark:text-zinc-500">Aucun chant.</div>
         ) : null}
@@ -89,10 +89,10 @@ export function SidebarSongList({
               key={s.id}
               onClick={() => onSelect(s.id)}
               className={[
-                "w-full rounded-lg px-2 py-2 text-left",
+                "w-full rounded-lg py-2.5 text-left transition-colors",
                 active
-                  ? "bg-indigo-100 dark:bg-indigo-600/20 ring-1 ring-indigo-600/40"
-                  : "hover:bg-zinc-100 dark:hover:bg-zinc-900/60",
+                  ? "border-l-4 border-l-accent-500 dark:border-l-accent-400 bg-zinc-100 dark:bg-zinc-800/60 pl-3 pr-3"
+                  : "border-l-4 border-l-transparent pl-3 pr-3 hover:bg-zinc-100 dark:hover:bg-zinc-900/60",
               ].join(" ")}
             >
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{collapsed ? "•" : s.title}</div>

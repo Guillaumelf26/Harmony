@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const preferencesSchema = z.object({
   theme: z.enum(["light", "dark"]).optional(),
+  accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });
 
 export type UserPreferences = z.infer<typeof preferencesSchema>;
@@ -55,6 +56,13 @@ export async function PUT(req: Request) {
   const res = NextResponse.json(merged);
   if (parsed.data.theme) {
     res.cookies.set("harmony-theme", parsed.data.theme, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
+  if (parsed.data.accentColor) {
+    res.cookies.set("harmony-accent", parsed.data.accentColor, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",

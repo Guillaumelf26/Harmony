@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-accent: #FA7A5F;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -19,6 +23,41 @@
 }
 .chordpro-editor .cm-gutters {
   background-color: transparent !important;
+}
+
+/* Thème clair : texte plus foncé, sélection de ligne plus douce */
+html:not(.dark) .chordpro-editor .cm-editor {
+  color: #18181b;
+}
+html:not(.dark) .chordpro-editor .cm-content {
+  caret-color: var(--color-accent);
+}
+html:not(.dark) .chordpro-editor .cm-cursor {
+  border-left-color: var(--color-accent);
+}
+html:not(.dark) .chordpro-editor .cm-selectionBackground,
+html:not(.dark) .chordpro-editor .cm-content ::selection {
+  background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+html:not(.dark) .chordpro-editor .cm-activeLine {
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+html:not(.dark) .chordpro-editor .cm-activeLineGutter {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+html:not(.dark) .chordpro-editor .cm-gutters {
+  color: #71717a;
+}
+
+/* Crochets correspondants dans l'éditeur ChordPro (thème clair et sombre) */
+.chordpro-editor .cm-editor.cm-focused .cm-matchingBracket,
+.chordpro-editor .cm-editor.cm-focused .cm-nonmatchingBracket {
+  background-color: color-mix(in srgb, var(--color-accent) 28%, transparent) !important;
+  border-radius: 2px;
+}
+.dark .chordpro-editor .cm-editor.cm-focused .cm-matchingBracket,
+.dark .chordpro-editor .cm-editor.cm-focused .cm-nonmatchingBracket {
+  background-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
 }
 
 /* Player audio en thème sombre */

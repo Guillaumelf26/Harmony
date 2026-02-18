@@ -19,8 +19,14 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const theme = cookieStore.get("harmony-theme")?.value ?? "dark";
+  const accentColor = cookieStore.get("harmony-accent")?.value ?? "#FA7A5F";
   return (
-    <html lang="fr" className={theme === "dark" ? "dark" : ""} suppressHydrationWarning>
+    <html
+      lang="fr"
+      className={theme === "dark" ? "dark" : ""}
+      style={{ ["--color-accent" as string]: accentColor }}
+      suppressHydrationWarning
+    >
       <body className={`${inter.className} ${lora.variable} bg-zinc-50 dark:bg-[#030712]`}>
         <Providers>{children}</Providers>
       </body>
