@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 type Bucket = { count: number; resetAt: number };
 const buckets = new Map<string, Bucket>();
@@ -38,6 +37,8 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/admin")) {
+    // Import dynamique : évite le blocage au démarrage sur Windows (next-auth/jwt)
+    const { getToken } = await import("next-auth/jwt");
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     const role = (token as { role?: string } | null)?.role;
     if (!token || role !== "ADMIN") {

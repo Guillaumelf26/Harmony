@@ -52,6 +52,9 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 
 export default function AdminClient() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewWidth, setPreviewWidth] = useState(470);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -76,6 +79,30 @@ export default function AdminClient() {
   } | null>(null);
   const POPUP_GAP = 8;
   const editorRef = useRef<EditorPaneRef>(null);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = previewWidth;
+    const minW = 280;
+    const maxW = Math.min(800, typeof window !== "undefined" ? window.innerWidth * 0.6 : 800);
+
+    function onMove(ev: MouseEvent) {
+      const delta = startX - ev.clientX;
+      const newW = Math.round(Math.min(maxW, Math.max(minW, startWidth + delta)));
+      setPreviewWidth(newW);
+    }
+    function onUp() {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [previewWidth]);
 
   const debouncedText = useDebouncedValue(editorText, 200);
   const previewDoc = useMemo(() => parseChordPro(debouncedText), [debouncedText]);
@@ -411,9 +438,45 @@ export default function AdminClient() {
   }, [editorText, selectedId]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <div className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
-        <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <div className="flex min-h-svh overflow-hidden text-zinc-900 dark:text-zinc-100">
+      {/* Background moderne : gradient teal→indigo + motifs subtils (style Fretlist) */}
+      <div
+        className="fixed inset-0 -z-10 bg-zinc-50 dark:bg-[#0a0f1a]"
+        aria-hidden
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/60 via-white to-indigo-100/40 dark:from-teal-950/60 dark:via-transparent dark:to-indigo-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-emerald-50/50 to-transparent dark:via-emerald-950/30" />
+        <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07]" style={{
+          backgroundImage: `radial-gradient(ellipse 80% 50% at 20% 40%, rgb(20 184 166) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 40% at 85% 60%, rgb(99 102 241) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 50% at 50% 80%, rgb(34 211 238) 0%, transparent 55%)`,
+        }} />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#94a3b812_1px,transparent_1px),linear-gradient(to_bottom,#94a3b812_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:56px_56px]" />
+      </div>
+
+      {/* Sidebar gauche : dans le flux flex (style Fretlist), pas en overlay */}
+      {sidebarOpen && (
+        <aside
+          className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/90 overflow-hidden"
+          aria-label="Liste des chants"
+        >
+          <SidebarSongList
+            collapsed={false}
+            overlay={false}
+            onToggleCollapsed={() => setSidebarOpen(false)}
+            query={query}
+            onQueryChange={setQuery}
+            songs={songs}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        </aside>
+      )}
+
+      {/* Zone principale : flex-1 min-w-0 pour éviter débordement */}
+      <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+        <header className="flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/70 backdrop-blur-md">
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
             type="button"
             onClick={() => setSidebarOpen((v) => !v)}
@@ -437,6 +500,17 @@ export default function AdminClient() {
             onImport={onImportClick}
           />
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen((v) => !v)}
+              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+              title={previewOpen ? "Masquer la preview" : "Afficher la preview"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
             <Link
               href="/admin/settings"
               className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
@@ -460,202 +534,257 @@ export default function AdminClient() {
             <SessionMenu />
           </div>
         </div>
-      </div>
+        </header>
 
-      {/* Volet latéral retractable (style Fretlist) */}
-      <>
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-        <aside
-          className={`fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-72 max-w-[85vw] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xl transition-transform duration-200 ease-out ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-          aria-label="Liste des chants"
-        >
-          <SidebarSongList
-            collapsed={false}
-            overlay
-            onToggleCollapsed={() => setSidebarOpen(false)}
-            query={query}
-            onQueryChange={setQuery}
-            songs={songs}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-        </aside>
-      </>
+        {/* Ligne éditeur + preview (style Fretlist) */}
+        <div className="flex flex-1 min-w-0 w-full overflow-hidden">
+          {/* Zone éditeur : flex-1 min-w-0 (style Fretlist) */}
+          <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 min-w-0 overflow-auto px-4 py-4">
+              <div className="mx-auto max-w-3xl space-y-4">
+              {/* Titre + Artiste : flex row comme Fretlist */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <label className="flex-1 min-w-0 space-y-2">
+                  <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Titre</div>
+                  <input
+                    value={metaTitle}
+                    onChange={(e) => {
+                      setMetaTitle(e.target.value);
+                      setDirty(true);
+                    }}
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </label>
+                <label className="flex-1 min-w-0 space-y-2">
+                  <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Artiste</div>
+                  <input
+                    value={metaArtist}
+                    onChange={(e) => {
+                      setMetaArtist(e.target.value);
+                      setDirty(true);
+                    }}
+                    placeholder="Laisser vide pour les originaux"
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </label>
+              </div>
 
-      <div
-        className={`grid w-full gap-3 px-4 py-4 transition-[margin] duration-200 ${
-          sidebarOpen ? "ml-72" : ""
-        }`}
-        style={{ gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)" }}
-      >
-        <div>
-          <div className="mb-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
-            <div className="grid grid-cols-12 gap-2">
-              <label className="col-span-12 md:col-span-6">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Titre</div>
-                <input
-                  value={metaTitle}
-                  onChange={(e) => {
-                    setMetaTitle(e.target.value);
-                    setDirty(true);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <label className="col-span-12 md:col-span-6">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Artiste</div>
-                <input
-                  value={metaArtist}
-                  onChange={(e) => {
-                    setMetaArtist(e.target.value);
-                    setDirty(true);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <label className="col-span-12 md:col-span-4">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Tonalité</div>
-                <input
-                  value={metaKey}
-                  onChange={(e) => {
-                    const newKey = e.target.value;
-                    setMetaKey(newKey);
-                    setDirty(true);
-                    // Synchroniser {key: X} dans le chordpro
-                    const trimmed = newKey.trim();
-                    if (trimmed) {
-                      const keyLine = `{key: ${trimmed}}`;
-                      const replaced = editorText.replace(/\{key\s*:\s*[^}]*\}/gi, keyLine);
-                      setEditorText(replaced !== editorText ? replaced : (editorText ? `${keyLine}\n${editorText}` : keyLine));
-                    } else {
-                      setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
-                    }
-                  }}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <label className="col-span-12 md:col-span-8">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Tags (séparés par des virgules)</div>
-                <input
-                  value={metaTags}
-                  onChange={(e) => {
-                    setMetaTags(e.target.value);
-                    setDirty(true);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <div className="col-span-12">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Audio</div>
-                {selectedSong?.audioUrl ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <audio
-                      src={selectedSong.audioUrl}
-                      controls
-                      className="h-8 max-w-full min-w-[200px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void onDeleteAudio()}
-                      className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200"
-                    >
-                      Supprimer
-                    </button>
+              {/* Song Details collapsible (style Fretlist) */}
+              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setDetailsExpanded((v) => !v)}
+                  className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 transition-colors"
+                >
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Détails du chant</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                      Tonalité {metaKey.trim() || "—"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={audioInputRef}
-                      type="file"
-                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm,audio/mp4,video/mp4"
-                      className="hidden"
-                      onChange={(e) => void onAudioFileSelected(e.target.files)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => audioInputRef.current?.click()}
-                      disabled={!selectedId || uploadingAudio}
-                      className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploadingAudio ? "Upload..." : "Upload audio"}
-                    </button>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-500">mp3, wav, ogg, webm, mp4 (max 10 Mo)</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className={`text-zinc-500 dark:text-zinc-400 flex-none ml-2 transition-transform duration-200 ${
+                      detailsExpanded ? "rotate-90" : ""
+                    }`}
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+                {detailsExpanded && (
+                  <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
+                    <label className="block">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Tonalité</div>
+                      <input
+                        value={metaKey}
+                        onChange={(e) => {
+                          const newKey = e.target.value;
+                          setMetaKey(newKey);
+                          setDirty(true);
+                          const trimmed = newKey.trim();
+                          if (trimmed) {
+                            const keyLine = `{key: ${trimmed}}`;
+                            const replaced = editorText.replace(/\{key\s*:\s*[^}]*\}/gi, keyLine);
+                            setEditorText(replaced !== editorText ? replaced : (editorText ? `${keyLine}\n${editorText}` : keyLine));
+                          } else {
+                            setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
+                          }
+                        }}
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Tags (séparés par des virgules)</div>
+                      <input
+                        value={metaTags}
+                        onChange={(e) => {
+                          setMetaTags(e.target.value);
+                          setDirty(true);
+                        }}
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Lien original (YouTube, etc.)</div>
+                      <input
+                        type="url"
+                        value={metaReferenceUrl}
+                        onChange={(e) => {
+                          setMetaReferenceUrl(e.target.value);
+                          setDirty(true);
+                        }}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </label>
+                    <div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Audio</div>
+                      {selectedSong?.audioUrl ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <audio
+                            src={selectedSong.audioUrl}
+                            controls
+                            className="h-8 max-w-full min-w-[200px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void onDeleteAudio()}
+                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={audioInputRef}
+                            type="file"
+                            accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm,audio/mp4,video/mp4"
+                            className="hidden"
+                            onChange={(e) => void onAudioFileSelected(e.target.files)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => audioInputRef.current?.click()}
+                            disabled={!selectedId || uploadingAudio}
+                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-200 disabled:opacity-50"
+                          >
+                            {uploadingAudio ? "Upload..." : "Upload audio"}
+                          </button>
+                          <span className="text-xs text-zinc-500">mp3, wav, ogg (max 10 Mo)</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-              <label className="col-span-12">
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">Lien original (YouTube, etc.)</div>
-                <input
-                  type="url"
-                  value={metaReferenceUrl}
-                  onChange={(e) => {
-                    setMetaReferenceUrl(e.target.value);
+
+              {/* Accords rapides */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Accords rapides (tonalité {metaKey.trim() || "—"})
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {chordButtons.map((chord) => (
+                      <button
+                        key={chord}
+                        type="button"
+                        onClick={() => insertChordAtCursor(chord)}
+                        className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                      >
+                        {chord}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onRemoveChords}
+                    className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm shrink-0 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                    title="Supprimer tous les accords [xxx] du chant"
+                  >
+                    Effacer accords
+                  </button>
+                </div>
+              </div>
+
+              {/* Éditeur ChordPro */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Paroles & accords</div>
+                <EditorPane
+                  ref={editorRef}
+                  value={editorText}
+                  height={"calc(100vh - 22rem)"}
+                  onChange={(v) => {
+                    setEditorText(v);
                     setDirty(true);
                   }}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
+                  onChordAtCursorChange={handleChordAtCursorChange}
                 />
-              </label>
+              </div>
+              </div>
             </div>
           </div>
 
-          <div className="mb-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
-            <div className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-              Accords rapides (tonalité {metaKey.trim() || "—"})
+          {/* Barre de redimensionnement (style Fretlist) */}
+          {previewOpen && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              onMouseDown={handleResizeStart}
+              className="w-3 shrink-0 flex items-center justify-center border-l border-zinc-200 dark:border-zinc-800 hover:bg-teal/10 transition-colors cursor-col-resize group select-none"
+              title="Redimensionner"
+            >
+              <div className="w-1.5 h-16 rounded-full bg-zinc-300 dark:bg-zinc-600 group-hover:bg-teal transition-colors pointer-events-none" />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                {chordButtons.map((chord) => (
-                  <button
-                    key={chord}
-                    type="button"
-                    onClick={() => insertChordAtCursor(chord)}
-                    className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100"
-                  >
-                    {chord}
-                  </button>
-                ))}
-              </div>
+          )}
+
+          {/* Preview live : largeur redimensionnable (style Fretlist) */}
+          {previewOpen ? (
+            <aside
+              className="shrink-0 overflow-auto border-l border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/30"
+              style={{ width: previewWidth }}
+              aria-label="Preview live"
+            >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Preview</span>
               <button
                 type="button"
-                onClick={onRemoveChords}
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100 shrink-0"
-                title="Supprimer tous les accords [xxx] du chant"
+                onClick={() => setPreviewOpen(false)}
+                className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200"
+                title="Masquer la preview"
               >
-                Effacer accords
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                  <path d="M15 3v18" />
+                  <path d="m8 9 3 3-3 3" />
+                </svg>
               </button>
             </div>
-          </div>
-
-          <EditorPane
-            ref={editorRef}
-            value={editorText}
-            height={"calc(100vh - 160px)"}
-            onChange={(v) => {
-              setEditorText(v);
-              setDirty(true);
-            }}
-            onChordAtCursorChange={handleChordAtCursorChange}
-          />
-        </div>
-
-        <div className="col-span-6 md:col-span-4">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30">
-            <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
-              Preview live
-            </div>
-            <div className="h-[calc(100vh-160px)] overflow-auto p-3">
+            <div className="p-4">
               <ChordProPreview doc={previewDoc} />
             </div>
-          </div>
+          </aside>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="shrink-0 w-10 flex flex-col items-center justify-center border-l border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors"
+              title="Afficher la preview"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500 dark:text-zinc-400">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
