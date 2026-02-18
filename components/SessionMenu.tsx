@@ -2,7 +2,8 @@
 
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useClickOutside } from "@/lib/useClickOutside";
 
 function getInitial(name: string | null | undefined, email: string | null | undefined): string {
   if (name?.trim()) {
@@ -19,15 +20,7 @@ export function SessionMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [open]);
+  useClickOutside(ref, () => setOpen(false), open);
 
   if (status === "loading") {
     return (

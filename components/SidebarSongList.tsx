@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useFavorites } from "@/components/FavoritesProvider";
+import { useClickOutside } from "@/lib/useClickOutside";
 
 type SongListItem = {
   id: string;
@@ -59,14 +60,8 @@ export function SidebarSongList({
       ? songs.filter((s) => favorites.includes(s.id))
       : songs;
 
-  useEffect(() => {
-    if (!filterOpen) return;
-    const h = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
-    };
-    document.addEventListener("click", h);
-    return () => document.removeEventListener("click", h);
-  }, [filterOpen]);
+  useClickOutside(filterRef, () => setFilterOpen(false), filterOpen);
+  useClickOutside(sortRef, () => setSortOpen(false), sortOpen);
 
   const sortOptions: { value: string; label: string }[] = [
     { value: "updatedAt-desc", label: "Plus récent" },
@@ -77,15 +72,6 @@ export function SidebarSongList({
     { value: "artist-desc", label: "Artiste Z-A" },
   ];
   const currentLabel = sortOptions.find((o) => o.value === `${sortBy}-${sortOrder}`)?.label ?? "Plus récent";
-
-  useEffect(() => {
-    if (!sortOpen) return;
-    const h = (e: MouseEvent) => {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
-    };
-    document.addEventListener("click", h);
-    return () => document.removeEventListener("click", h);
-  }, [sortOpen]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-white/90 dark:bg-zinc-950/30">

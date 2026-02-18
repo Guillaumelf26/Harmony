@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { transposeChordProText } from "@/lib/transposeChord";
 import { useFavorites } from "@/components/FavoritesProvider";
+import { useClickOutside } from "@/lib/useClickOutside";
 
 type Props = {
   chordproText: string;
@@ -33,17 +34,7 @@ export function SongReadingView({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isFav = isFavorite(songId);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
+  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
 
   const displayText = useMemo(
     () => (transposeSemitones === 0 ? chordproText : transposeChordProText(chordproText, transposeSemitones)),

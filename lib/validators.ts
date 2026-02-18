@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/** Extrait un tableau de strings depuis une valeur unknown (ex. tags JSON). */
+export function tagsFromUnknown(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string");
+}
+
 export const songUpsertSchema = z.object({
   title: z.string().min(1).max(200),
   artist: z.string().min(1).max(200).optional().nullable(),

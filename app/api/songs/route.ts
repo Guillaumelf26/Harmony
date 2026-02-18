@@ -3,11 +3,10 @@ import { Prisma } from "@prisma/client";
 import { getServerAuthSession } from "@/lib/auth";
 import { isAdminSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { normalizeTags, songUpsertSchema } from "@/lib/validators";
+import { normalizeTags, songUpsertSchema, tagsFromUnknown } from "@/lib/validators";
 
 function getTags(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((v): v is string => typeof v === "string").map((s) => s.toLowerCase());
+  return tagsFromUnknown(value).map((s) => s.toLowerCase());
 }
 
 function isTestAdmin(req: Request) {

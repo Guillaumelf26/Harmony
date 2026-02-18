@@ -14,6 +14,8 @@ import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
 import { getChordsForKey } from "@/lib/chordsByKey";
 import { appendChordExtension } from "@/lib/chordAtCursor";
 import type { ChordAtCursorInfo } from "@/components/EditorPane";
+import { tagsFromUnknown } from "@/lib/validators";
+import { useClickOutside } from "@/lib/useClickOutside";
 
 type SongListItem = {
   id: string;
@@ -37,11 +39,6 @@ type Song = {
   createdAt: string;
   updatedAt: string;
 };
-
-function tagsFromUnknown(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((v): v is string => typeof v === "string");
-}
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
@@ -149,14 +146,7 @@ export default function AdminClient() {
     };
   }, [activeChordInfo, updatePopupPosition]);
 
-  useEffect(() => {
-    if (!editMenuOpen) return;
-    const h = (e: MouseEvent) => {
-      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) setEditMenuOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [editMenuOpen]);
+  useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen);
 
   async function refreshList() {
     const params = new URLSearchParams();

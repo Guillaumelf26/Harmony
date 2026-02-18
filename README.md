@@ -71,7 +71,8 @@ Puis ouvre :
 - **Import/Export** : ChordPro (UI)
 - **Audio** : upload par chant (Vercel Blob), formats mp3, wav, ogg, webm, mp4
 - **Lien original** : URL YouTube ou autre par chant
-- **Session** : email connecté + déconnexion
+- **Favoris** : stockés en base (synchronisés entre appareils), filtre Tout/Favoris
+- **Session** : avatar avec menu (Paramètres, déconnexion)
 - **Raccourci** : Ctrl/Cmd+S pour sauvegarder
 
 ## Mise en production
@@ -100,9 +101,16 @@ Si erreur `unable to get local issuer certificate` :
 - **Propre** : `NODE_EXTRA_CA_CERTS` vers le certificat racine
 - **Contournement (dev)** : `NODE_TLS_REJECT_UNAUTHORIZED=0` (déconseillé en prod)
 
+## Tests
+Les tests utilisent un token spécial en mode `NODE_ENV=test`. Définir `TEST_ADMIN_TOKEN` dans `.env` (optionnel, valeur par défaut : `test-admin-token`).
+
+```bash
+npm test
+```
+
 ## Structure
 - `app/` : routes Next.js (login, admin, api)
-- `components/` : Sidebar, Toolbar, Editor, etc.
-- `lib/` : prisma, auth, rbac, validators
+- `components/` : SidebarSongList, Toolbar, EditorPane, SongReadingView, FavoritesProvider, etc.
+- `lib/` : prisma, auth, rbac, validators, useClickOutside, transposeChord, chordAtCursor
 - `chordpro/` : parse + render
 - `prisma/` : schema, migrations, seed
