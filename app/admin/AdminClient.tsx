@@ -51,7 +51,7 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export default function AdminClient() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -412,8 +412,20 @@ export default function AdminClient() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
+      <div className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
         <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((v) => !v)}
+            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            title={sidebarOpen ? "Masquer le panneau" : "Afficher le panneau"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+            </svg>
+          </button>
           <Toolbar
             dirty={dirty}
             saving={saving}
@@ -450,20 +462,41 @@ export default function AdminClient() {
         </div>
       </div>
 
-      <div className="grid w-full grid-cols-12 gap-3 px-4 py-4">
-        <div className={sidebarCollapsed ? "col-span-1" : "col-span-3"}>
+      {/* Volet latéral retractable (style Fretlist) */}
+      <>
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <aside
+          className={`fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-72 max-w-[85vw] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xl transition-transform duration-200 ease-out ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          aria-label="Liste des chants"
+        >
           <SidebarSongList
-            collapsed={sidebarCollapsed}
-            onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+            collapsed={false}
+            overlay
+            onToggleCollapsed={() => setSidebarOpen(false)}
             query={query}
             onQueryChange={setQuery}
             songs={songs}
             selectedId={selectedId}
             onSelect={onSelect}
           />
-        </div>
+        </aside>
+      </>
 
-        <div className={sidebarCollapsed ? "col-span-6" : "col-span-5"}>
+      <div
+        className={`grid w-full gap-3 px-4 py-4 transition-[margin] duration-200 ${
+          sidebarOpen ? "ml-72" : ""
+        }`}
+        style={{ gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)" }}
+      >
+        <div>
           <div className="mb-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
             <div className="grid grid-cols-12 gap-2">
               <label className="col-span-12 md:col-span-6">

@@ -67,8 +67,8 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
             ) : (
               <>
                 <div
-                  className="min-h-[1.2em] font-medium text-indigo-600 dark:text-indigo-300"
-                  style={{ whiteSpace: "pre" }}
+                  className="min-h-[1.2em] font-medium"
+                  style={{ whiteSpace: "pre", color: "#ffb900" }}
                 >
                   {chords}
                 </div>

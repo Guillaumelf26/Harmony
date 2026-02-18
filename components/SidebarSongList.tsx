@@ -7,34 +7,44 @@ type SongListItem = {
 };
 
 type Props = {
-  collapsed: boolean;
+  collapsed?: boolean;
   onToggleCollapsed: () => void;
   query: string;
   onQueryChange: (v: string) => void;
   songs: SongListItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Mode overlay : bouton fermer (×) au lieu de « */
+  overlay?: boolean;
 };
 
 export function SidebarSongList({
-  collapsed,
+  collapsed = false,
   onToggleCollapsed,
   query,
   onQueryChange,
   songs,
   selectedId,
   onSelect,
+  overlay = false,
 }: Props) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30">
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
-        <div className="text-xs text-zinc-500 dark:text-zinc-400">{collapsed ? "♫" : "Chants"}</div>
+    <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-zinc-50 dark:bg-zinc-900/50">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
+        <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Chants</div>
         <button
           onClick={onToggleCollapsed}
-          className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2 py-1 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-          title={collapsed ? "Déplier" : "Rétracter"}
+          className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+          title={overlay ? "Fermer le panneau" : "Rétracter"}
         >
-          {collapsed ? "»" : "«"}
+          {overlay ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          ) : (
+            collapsed ? "»" : "«"
+          )}
         </button>
       </div>
 
@@ -49,7 +59,7 @@ export function SidebarSongList({
         </div>
       )}
 
-      <div className={collapsed ? "p-2" : "max-h-[calc(100vh-220px)] overflow-auto px-2 pb-2"}>
+      <div className={`flex-1 min-h-0 overflow-auto ${collapsed ? "p-2" : "px-2 pb-2"}`}>
         {songs.length === 0 ? (
           <div className="px-2 py-3 text-xs text-zinc-500 dark:text-zinc-500">Aucun chant.</div>
         ) : null}
