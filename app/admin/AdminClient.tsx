@@ -510,7 +510,7 @@ export default function AdminClient() {
                     <input
                       ref={audioInputRef}
                       type="file"
-                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm"
+                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm,audio/mp4,video/mp4"
                       className="hidden"
                       onChange={(e) => void onAudioFileSelected(e.target.files)}
                     />
@@ -522,7 +522,7 @@ export default function AdminClient() {
                     >
                       {uploadingAudio ? "Upload..." : "Upload audio"}
                     </button>
-                    <span className="text-xs text-zinc-500">mp3, wav, ogg, webm (max 10 Mo)</span>
+                    <span className="text-xs text-zinc-500">mp3, wav, ogg, webm, mp4 (max 10 Mo)</span>
                   </div>
                 )}
               </div>

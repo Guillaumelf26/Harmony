@@ -7,7 +7,16 @@ import { prisma } from "@/lib/prisma";
 type Params = { params: { id: string } };
 
 const MAX_SIZE_MB = 10;
-const ALLOWED_TYPES = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/webm", "audio/x-wav"];
+const ALLOWED_TYPES = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/ogg",
+  "audio/webm",
+  "audio/x-wav",
+  "audio/mp4",
+  "video/mp4", // WhatsApp envoie parfois des mp4 audio-only
+];
 
 export async function POST(req: Request, { params }: Params) {
   const session = await getServerAuthSession();
@@ -30,12 +39,12 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const type = file.type.toLowerCase();
-  const isAllowed = ALLOWED_TYPES.includes(type) || ["mpeg", "mp3", "wav", "ogg", "webm"].some((ext) =>
-    type.includes(ext)
-  );
+  const isAllowed =
+    ALLOWED_TYPES.includes(type) ||
+    ["mpeg", "mp3", "wav", "ogg", "webm", "mp4"].some((ext) => type.includes(ext));
   if (!isAllowed) {
     return NextResponse.json(
-      { error: "BAD_REQUEST", message: "Format non supporté (mp3, wav, ogg, webm)" },
+      { error: "BAD_REQUEST", message: "Format non supporté (mp3, wav, ogg, webm, mp4)" },
       { status: 400 }
     );
   }
