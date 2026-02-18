@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -10,13 +11,15 @@ export const metadata: Metadata = {
   description: "Admin-only songbook (ChordPro)",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("harmony-theme")?.value ?? "dark";
   return (
-    <html lang="fr">
+    <html lang="fr" className={theme === "dark" ? "dark" : ""} suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

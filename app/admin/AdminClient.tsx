@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
@@ -410,9 +411,9 @@ export default function AdminClient() {
   }, [editorText, selectedId]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Toolbar
             dirty={dirty}
             saving={saving}
@@ -423,11 +424,33 @@ export default function AdminClient() {
             onExport={onExport}
             onImport={onImportClick}
           />
-          <SessionMenu />
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/settings"
+              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+              title="Paramètres"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </Link>
+            <SessionMenu />
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1400px] grid-cols-12 gap-3 px-4 py-4">
+      <div className="grid w-full grid-cols-12 gap-3 px-4 py-4">
         <div className={sidebarCollapsed ? "col-span-1" : "col-span-3"}>
           <SidebarSongList
             collapsed={sidebarCollapsed}
@@ -441,32 +464,32 @@ export default function AdminClient() {
         </div>
 
         <div className={sidebarCollapsed ? "col-span-6" : "col-span-5"}>
-          <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+          <div className="mb-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
             <div className="grid grid-cols-12 gap-2">
               <label className="col-span-12 md:col-span-6">
-                <div className="text-xs text-zinc-400">Titre</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Titre</div>
                 <input
                   value={metaTitle}
                   onChange={(e) => {
                     setMetaTitle(e.target.value);
                     setDirty(true);
                   }}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
               <label className="col-span-12 md:col-span-6">
-                <div className="text-xs text-zinc-400">Artiste</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Artiste</div>
                 <input
                   value={metaArtist}
                   onChange={(e) => {
                     setMetaArtist(e.target.value);
                     setDirty(true);
                   }}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
               <label className="col-span-12 md:col-span-4">
-                <div className="text-xs text-zinc-400">Tonalité</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Tonalité</div>
                 <input
                   value={metaKey}
                   onChange={(e) => {
@@ -483,22 +506,22 @@ export default function AdminClient() {
                       setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
                     }
                   }}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
               <label className="col-span-12 md:col-span-8">
-                <div className="text-xs text-zinc-400">Tags (séparés par des virgules)</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Tags (séparés par des virgules)</div>
                 <input
                   value={metaTags}
                   onChange={(e) => {
                     setMetaTags(e.target.value);
                     setDirty(true);
                   }}
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
               <div className="col-span-12">
-                <div className="text-xs text-zinc-400 mb-1">Audio</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Audio</div>
                 {selectedSong?.audioUrl ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <audio
@@ -509,7 +532,7 @@ export default function AdminClient() {
                     <button
                       type="button"
                       onClick={() => void onDeleteAudio()}
-                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200"
                     >
                       Supprimer
                     </button>
@@ -527,16 +550,16 @@ export default function AdminClient() {
                       type="button"
                       onClick={() => audioInputRef.current?.click()}
                       disabled={!selectedId || uploadingAudio}
-                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-indigo-200 transition hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {uploadingAudio ? "Upload..." : "Upload audio"}
                     </button>
-                    <span className="text-xs text-zinc-500">mp3, wav, ogg, webm, mp4 (max 10 Mo)</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-500">mp3, wav, ogg, webm, mp4 (max 10 Mo)</span>
                   </div>
                 )}
               </div>
               <label className="col-span-12">
-                <div className="text-xs text-zinc-400">Lien original (YouTube, etc.)</div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">Lien original (YouTube, etc.)</div>
                 <input
                   type="url"
                   value={metaReferenceUrl}
@@ -545,14 +568,14 @@ export default function AdminClient() {
                     setDirty(true);
                   }}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
             </div>
           </div>
 
-          <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
-            <div className="mb-2 text-xs text-zinc-400">
+          <div className="mb-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-3">
+            <div className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
               Accords rapides (tonalité {metaKey.trim() || "—"})
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -562,7 +585,7 @@ export default function AdminClient() {
                     key={chord}
                     type="button"
                     onClick={() => insertChordAtCursor(chord)}
-                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
+                    className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100"
                   >
                     {chord}
                   </button>
@@ -571,7 +594,7 @@ export default function AdminClient() {
               <button
                 type="button"
                 onClick={onRemoveChords}
-                className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100 shrink-0"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100 shrink-0"
                 title="Supprimer tous les accords [xxx] du chant"
               >
                 Effacer accords
@@ -592,8 +615,8 @@ export default function AdminClient() {
         </div>
 
         <div className="col-span-6 md:col-span-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/30">
-            <div className="border-b border-zinc-800 px-3 py-2 text-xs text-zinc-400">
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30">
+            <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
               Preview live
             </div>
             <div className="h-[calc(100vh-160px)] overflow-auto p-3">
@@ -617,7 +640,7 @@ export default function AdminClient() {
         popupCoords &&
         createPortal(
           <div
-            className="fixed z-50 flex gap-1 rounded-lg border border-zinc-600 bg-zinc-800 px-2 py-1.5 shadow-xl"
+            className="fixed z-50 flex gap-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-zinc-200 dark:bg-zinc-800 px-2 py-1.5 shadow-xl"
             style={{
               left: popupCoords.left,
               top: popupCoords.top - POPUP_GAP,
@@ -629,7 +652,7 @@ export default function AdminClient() {
                 key={ext}
                 type="button"
                 onClick={() => applyChordExtension(ext)}
-                className="rounded px-2 py-1 text-sm font-medium text-indigo-200 transition hover:bg-zinc-700 hover:text-indigo-100"
+                className="rounded px-2 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100"
                 title={`Ajouter ${ext}`}
               >
                 {ext}

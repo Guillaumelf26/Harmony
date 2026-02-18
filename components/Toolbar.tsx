@@ -22,18 +22,18 @@ export function Toolbar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2">
-        <div className="text-sm font-semibold">Harmony</div>
-        <div className="text-xs text-zinc-400">Admin Songbook</div>
+        <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Harmony</div>
+        <div className="text-xs text-zinc-500 dark:text-zinc-400">Admin Songbook</div>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="mr-2 text-xs text-zinc-400">
+        <div className="mr-2 text-xs text-zinc-500 dark:text-zinc-400">
           {saving ? "Sauvegarde..." : dirty ? "Modifié" : "Sauvegardé"}
         </div>
 
         <button
           onClick={onNew}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900"
+          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
         >
           New
         </button>
@@ -48,19 +48,19 @@ export function Toolbar({
         <button
           onClick={onDelete}
           disabled={!hasSelection}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900 disabled:opacity-60"
+          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900 disabled:opacity-60"
         >
           Delete
         </button>
         <button
           onClick={onImport}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900"
+          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
         >
           Import
         </button>
         <button
           onClick={onExport}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-sm hover:bg-zinc-900"
+          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
         >
           Export
         </button>
