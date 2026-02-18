@@ -29,6 +29,7 @@ type Song = {
   timeSignature: string | null;
   tags: unknown;
   chordproText: string;
+  audioUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -57,6 +58,8 @@ export default function AdminClient() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
 
   const [metaTitle, setMetaTitle] = useState("");
   const [metaArtist, setMetaArtist] = useState("");
@@ -306,6 +309,40 @@ export default function AdminClient() {
     fileInputRef.current?.click();
   }
 
+  async function onAudioFileSelected(files: FileList | null) {
+    if (!files?.[0] || !selectedId) return;
+    setUploadingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", files[0]);
+      const res = await fetch(`/api/songs/${selectedId}/audio`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
+        window.alert(err.message || "Erreur lors de l'upload");
+        return;
+      }
+      const { url } = (await res.json()) as { url: string };
+      setSelectedSong((prev) => (prev ? { ...prev, audioUrl: url } : null));
+    } finally {
+      setUploadingAudio(false);
+      if (audioInputRef.current) audioInputRef.current.value = "";
+    }
+  }
+
+  async function onDeleteAudio() {
+    if (!selectedId || !selectedSong?.audioUrl) return;
+    if (!window.confirm("Supprimer le fichier audio de ce chant ?")) return;
+    const res = await fetch(`/api/songs/${selectedId}/audio`, { method: "DELETE" });
+    if (res.ok) {
+      setSelectedSong((prev) => (prev ? { ...prev, audioUrl: null } : null));
+    } else {
+      window.alert("Erreur lors de la suppression");
+    }
+  }
+
   async function onImportFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     if (dirty) {
@@ -451,6 +488,44 @@ export default function AdminClient() {
                   className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </label>
+              <div className="col-span-12">
+                <div className="text-xs text-zinc-400 mb-1">Audio</div>
+                {selectedSong?.audioUrl ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <audio
+                      src={selectedSong.audioUrl}
+                      controls
+                      className="h-8 max-w-full min-w-[200px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void onDeleteAudio()}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm"
+                      className="hidden"
+                      onChange={(e) => void onAudioFileSelected(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => audioInputRef.current?.click()}
+                      disabled={!selectedId || uploadingAudio}
+                      className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-indigo-200 transition hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {uploadingAudio ? "Upload..." : "Upload audio"}
+                    </button>
+                    <span className="text-xs text-zinc-500">mp3, wav, ogg, webm (max 10 Mo)</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -500,6 +575,11 @@ export default function AdminClient() {
               Preview live
             </div>
             <div className="h-[calc(100vh-160px)] overflow-auto p-3">
+              {selectedSong?.audioUrl && (
+                <div className="mb-3">
+                  <audio src={selectedSong.audioUrl} controls className="w-full h-10" />
+                </div>
+              )}
               <ChordProPreview doc={previewDoc} />
             </div>
           </div>

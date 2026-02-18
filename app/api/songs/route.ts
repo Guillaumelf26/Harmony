@@ -99,6 +99,7 @@ export async function POST(req: Request) {
       timeSignature: data.timeSignature ?? null,
       tags,
       chordproText: data.chordproText ?? "",
+      audioUrl: data.audioUrl ?? null,
     },
   });
 

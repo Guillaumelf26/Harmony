@@ -20,6 +20,7 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@prisma/client": "^6.19.2",
     "@uiw/react-codemirror": "^4.25.4",
+    "@vercel/blob": "^1.1.1",
     "bcrypt": "^6.0.0",
     "next": "14.2.35",
     "next-auth": "^4.24.13",
@@ -29,7 +30,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "dotenv": "^16.4.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcrypt": "^6.0.0",
@@ -39,6 +39,7 @@
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
     "@vitest/ui": "^3.2.4",
+    "dotenv": "^16.4.5",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "jsdom": "^26.1.0",

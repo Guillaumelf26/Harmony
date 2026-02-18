@@ -12,6 +12,7 @@ export const songUpsertSchema = z.object({
     .nullable(),
   tags: z.array(z.string().min(1).max(50)).default([]),
   chordproText: z.string().default(""),
+  audioUrl: z.string().url().optional().nullable(),
 });
 
 export const songPatchSchema = songUpsertSchema.partial();
