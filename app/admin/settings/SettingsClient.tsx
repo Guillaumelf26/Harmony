@@ -92,7 +92,7 @@ export default function SettingsClient() {
                       disabled={saving}
                       className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                         theme === "light"
-                          ? "bg-indigo-600 text-white"
+                          ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
                           : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
                       } disabled:opacity-50`}
                     >
@@ -104,7 +104,7 @@ export default function SettingsClient() {
                       disabled={saving}
                       className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                         theme === "dark"
-                          ? "bg-indigo-600 text-white"
+                          ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white"
                           : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
                       } disabled:opacity-50`}
                     >

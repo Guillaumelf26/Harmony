@@ -49,7 +49,7 @@ export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
   );
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-sm">
+    <div className="chordpro-editor min-w-0 overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-950/30 backdrop-blur-sm">
       <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
         Éditeur (ChordPro)
       </div>

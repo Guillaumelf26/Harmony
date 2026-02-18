@@ -439,25 +439,26 @@ export default function AdminClient() {
 
   return (
     <div className="flex min-h-svh overflow-hidden text-zinc-900 dark:text-zinc-100">
-      {/* Background moderne : gradient teal→indigo + motifs subtils (style Fretlist) */}
+      {/* Background style Fretlist : cercles floutés (pas d'image) */}
       <div
-        className="fixed inset-0 -z-10 bg-zinc-50 dark:bg-[#0a0f1a]"
+        className="fixed inset-0 -z-10 bg-zinc-50 dark:bg-[#030712]"
         aria-hidden
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-100/60 via-white to-indigo-100/40 dark:from-teal-950/60 dark:via-transparent dark:to-indigo-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-emerald-50/50 to-transparent dark:via-emerald-950/30" />
-        <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07]" style={{
-          backgroundImage: `radial-gradient(ellipse 80% 50% at 20% 40%, rgb(20 184 166) 0%, transparent 50%),
-            radial-gradient(ellipse 60% 40% at 85% 60%, rgb(99 102 241) 0%, transparent 50%),
-            radial-gradient(ellipse 50% 50% at 50% 80%, rgb(34 211 238) 0%, transparent 55%)`,
-        }} />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#94a3b812_1px,transparent_1px),linear-gradient(to_bottom,#94a3b812_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:56px_56px]" />
+        {/* Cercles floutés teal/pink/purple/orange (visible en dark mode) */}
+        <div className="hidden dark:block fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-teal-500/20 blur-[120px]" />
+          <div className="absolute top-1/3 -right-20 w-[400px] h-[400px] rounded-full bg-pink-500/15 blur-[100px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] rounded-full bg-purple-500/15 blur-[110px]" />
+          <div className="absolute -bottom-20 right-1/3 w-[480px] h-[480px] rounded-full bg-orange-500/10 blur-[100px]" />
+        </div>
+        {/* Overlay bruit subtil (style Fretlist) */}
+        <div className="noise-overlay pointer-events-none fixed inset-0 hidden dark:block" aria-hidden />
       </div>
 
       {/* Sidebar gauche : dans le flux flex (style Fretlist), pas en overlay */}
       {sidebarOpen && (
         <aside
-          className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/90 overflow-hidden"
+          className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 overflow-hidden backdrop-blur-sm"
           aria-label="Liste des chants"
         >
           <SidebarSongList
@@ -475,7 +476,7 @@ export default function AdminClient() {
 
       {/* Zone principale : flex-1 min-w-0 pour éviter débordement */}
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-        <header className="flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/70 backdrop-blur-md">
+        <header className="flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
           <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
             type="button"
@@ -552,7 +553,7 @@ export default function AdminClient() {
                       setMetaTitle(e.target.value);
                       setDirty(true);
                     }}
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
                   />
                 </label>
                 <label className="flex-1 min-w-0 space-y-2">
@@ -564,13 +565,13 @@ export default function AdminClient() {
                       setDirty(true);
                     }}
                     placeholder="Laisser vide pour les originaux"
-                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
                   />
                 </label>
               </div>
 
               {/* Song Details collapsible (style Fretlist) */}
-              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30 overflow-hidden">
+              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setDetailsExpanded((v) => !v)}
@@ -616,7 +617,7 @@ export default function AdminClient() {
                             setEditorText((prev) => prev.replace(/\{key\s*:\s*[^}]*\}\s*\n?/g, ""));
                           }
                         }}
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
                       />
                     </label>
 
@@ -628,7 +629,7 @@ export default function AdminClient() {
                           setMetaTags(e.target.value);
                           setDirty(true);
                         }}
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
                       />
                     </label>
                     <label className="block">
@@ -641,7 +642,7 @@ export default function AdminClient() {
                           setDirty(true);
                         }}
                         placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
                       />
                     </label>
                     <div>
@@ -656,7 +657,7 @@ export default function AdminClient() {
                           <button
                             type="button"
                             onClick={() => void onDeleteAudio()}
-                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                            className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-2 py-1 text-xs text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
                           >
                             Supprimer
                           </button>
@@ -687,18 +688,18 @@ export default function AdminClient() {
               </div>
 
               {/* Accords rapides */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <div className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 overflow-hidden">
+                <div className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Accords rapides (tonalité {metaKey.trim() || "—"})
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {chordButtons.map((chord) => (
                       <button
                         key={chord}
                         type="button"
                         onClick={() => insertChordAtCursor(chord)}
-                        className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-200 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                        className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-500/50 transition-colors"
                       >
                         {chord}
                       </button>
@@ -707,7 +708,7 @@ export default function AdminClient() {
                   <button
                     type="button"
                     onClick={onRemoveChords}
-                    className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm shrink-0 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                    className="rounded-md border border-indigo-500/30 dark:border-indigo-400/30 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm shrink-0 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-500/50 transition-colors"
                     title="Supprimer tous les accords [xxx] du chant"
                   >
                     Effacer accords
@@ -749,7 +750,7 @@ export default function AdminClient() {
           {/* Preview live : largeur redimensionnable (style Fretlist) */}
           {previewOpen ? (
             <aside
-              className="shrink-0 overflow-auto border-l border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/30"
+              className="shrink-0 overflow-auto border-l border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/30"
               style={{ width: previewWidth }}
               aria-label="Preview live"
             >
@@ -802,7 +803,7 @@ export default function AdminClient() {
         popupCoords &&
         createPortal(
           <div
-            className="fixed z-50 flex gap-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-zinc-200 dark:bg-zinc-800 px-2 py-1.5 shadow-xl"
+            className="fixed z-50 flex gap-1 rounded-lg border border-indigo-500/40 dark:border-indigo-400/40 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-md px-2 py-1.5 shadow-xl shadow-indigo-500/10"
             style={{
               left: popupCoords.left,
               top: popupCoords.top - POPUP_GAP,
@@ -814,7 +815,7 @@ export default function AdminClient() {
                 key={ext}
                 type="button"
                 onClick={() => applyChordExtension(ext)}
-                className="rounded px-2 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-200 transition hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-indigo-700 dark:hover:text-indigo-100"
+                className="rounded px-2 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-300 transition hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-100"
                 title={`Ajouter ${ext}`}
               >
                 {ext}

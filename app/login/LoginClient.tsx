@@ -97,7 +97,7 @@ export default function LoginClient() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+            className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-2 text-sm font-medium text-white hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-60 disabled:from-indigo-500 disabled:to-indigo-600 transition-all"
           >
             {isPending ? "Connexion..." : "Se connecter"}
           </button>

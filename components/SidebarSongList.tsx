@@ -29,7 +29,7 @@ export function SidebarSongList({
   overlay = false,
 }: Props) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-zinc-50 dark:bg-zinc-900/50">
+    <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-white/50 dark:bg-zinc-950/30">
       <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
         <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Chants</div>
         <button
@@ -54,7 +54,7 @@ export function SidebarSongList({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Recherche titre / artiste"
-            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
           />
         </div>
       )}

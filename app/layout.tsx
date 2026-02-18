@@ -20,7 +20,7 @@ export default async function RootLayout({
   const theme = cookieStore.get("harmony-theme")?.value ?? "dark";
   return (
     <html lang="fr" className={theme === "dark" ? "dark" : ""} suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-zinc-50 dark:bg-[#030712]`}>
         <Providers>{children}</Providers>
       </body>
     </html>
