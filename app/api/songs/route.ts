@@ -27,14 +27,19 @@ export async function GET(req: Request) {
   const query = (searchParams.get("query") ?? "").trim();
   const tag = (searchParams.get("tag") ?? "").trim().toLowerCase();
   const artist = (searchParams.get("artist") ?? "").trim();
+  const sortBy = (searchParams.get("sortBy") ?? "updatedAt") as "title" | "artist" | "updatedAt";
+  const sortOrder = (searchParams.get("sortOrder") ?? "desc") as "asc" | "desc";
 
-  // MVP search (SQLite): Prisma doesn't support case-insensitive search.
-  // We keep the DB query simple and apply filters in-memory.
-  const where: Prisma.SongWhereInput = {};
+  const orderBy: Prisma.SongOrderByWithRelationInput =
+    sortBy === "title"
+      ? { title: sortOrder }
+      : sortBy === "artist"
+        ? { artist: sortOrder }
+        : { updatedAt: sortOrder };
 
   let items = await prisma.song.findMany({
-    where,
-    orderBy: { updatedAt: "desc" },
+    where: {},
+    orderBy,
     select: {
       id: true,
       title: true,

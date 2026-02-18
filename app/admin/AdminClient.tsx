@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
+import { SongReadingView } from "@/components/SongReadingView";
 import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
 import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
@@ -58,15 +59,20 @@ export default function AdminClient() {
   const [previewWidth, setPreviewWidth] = useState(470);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"title" | "artist" | "updatedAt">("updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [editorText, setEditorText] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const editMenuRef = useRef<HTMLDivElement>(null);
 
   const [metaTitle, setMetaTitle] = useState("");
   const [metaArtist, setMetaArtist] = useState("");
@@ -142,8 +148,21 @@ export default function AdminClient() {
     };
   }, [activeChordInfo, updatePopupPosition]);
 
+  useEffect(() => {
+    if (!editMenuOpen) return;
+    const h = (e: MouseEvent) => {
+      if (editMenuRef.current && !editMenuRef.current.contains(e.target as Node)) setEditMenuOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [editMenuOpen]);
+
   async function refreshList() {
-    const res = await fetch(`/api/songs?query=${encodeURIComponent(query)}`, { cache: "no-store" });
+    const params = new URLSearchParams();
+    if (query) params.set("query", query);
+    params.set("sortBy", sortBy);
+    params.set("sortOrder", sortOrder);
+    const res = await fetch(`/api/songs?${params}`, { cache: "no-store" });
     if (!res.ok) return;
     const data = (await res.json()) as { items: SongListItem[] };
     setSongs(data.items);
@@ -156,6 +175,7 @@ export default function AdminClient() {
     setSelectedId(id);
     setSelectedSong(song);
     setEditorText(song.chordproText ?? "");
+    setEditMode(false);
     setMetaTitle(song.title ?? "");
     setMetaArtist(song.artist ?? "");
     setMetaKey(song.key ?? "");
@@ -174,7 +194,7 @@ export default function AdminClient() {
     const t = window.setTimeout(() => void refreshList(), 250);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, sortBy, sortOrder]);
 
   async function onSelect(id: string) {
     if (dirty && selectedId !== id) {
@@ -185,6 +205,10 @@ export default function AdminClient() {
   }
 
   async function onCancel() {
+    if (editMode && !dirty) {
+      setEditMode(false);
+      return;
+    }
     if (selectedId) {
       await loadSong(selectedId);
     } else {
@@ -208,6 +232,7 @@ export default function AdminClient() {
     }
     setSelectedId(null);
     setSelectedSong(null);
+    setEditMode(true);
     setMetaTitle("Nouveau chant");
     setMetaArtist("");
     setMetaKey("");
@@ -490,9 +515,16 @@ export default function AdminClient() {
           <SidebarSongList
             collapsed={false}
             overlay={false}
+            hideCollapseButton
             onToggleCollapsed={() => setSidebarOpen(false)}
             query={query}
             onQueryChange={setQuery}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={(by, order) => {
+              setSortBy(by);
+              setSortOrder(order);
+            }}
             songs={songs}
             selectedId={selectedId}
             onSelect={onSelect}
@@ -509,24 +541,31 @@ export default function AdminClient() {
             type="button"
             onClick={() => setSidebarOpen((v) => !v)}
             className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-            title={sidebarOpen ? "Masquer le panneau" : "Afficher le panneau"}
+            title={sidebarOpen ? "Replier le panneau" : "Afficher le panneau"}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="18" x2="20" y2="18" />
-            </svg>
+            {sidebarOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+              </svg>
+            )}
           </button>
-          <Toolbar
-            dirty={dirty}
-            saving={saving}
-            hasSelection={!!selectedId}
-            onSave={onSave}
-            onCancel={onCancel}
-            onDelete={onDelete}
-            onExport={onExport}
-            onImport={onImportClick}
-          />
+          {!editMode ? (
+            <Toolbar
+              dirty={dirty}
+              saving={saving}
+              editMode={editMode}
+              onSave={onSave}
+              onCancel={onCancel}
+            />
+          ) : (
+            <div className="flex-1" />
+          )}
           <div className="flex items-center gap-2">
             <Link
               href="/admin/settings"
@@ -555,17 +594,120 @@ export default function AdminClient() {
 
         {/* Ligne éditeur + preview (style Fretlist) */}
         <div className="flex flex-1 min-w-0 w-full overflow-hidden">
-          {/* Zone éditeur : flex-1 min-w-0 (style Fretlist) */}
+          {/* Zone principale : lecture ou édition */}
           <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
-            <div className="flex-1 min-h-0 min-w-0 overflow-auto px-4 py-4">
+            <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
               {!selectedId ? (
                 <div className="flex flex-col items-center justify-center min-h-full text-center px-4">
                   <p className="text-lg text-zinc-600 dark:text-zinc-400">
                     Bonjour {session?.user?.name ?? session?.user?.email?.split("@")[0] ?? "Utilisateur"}, veuillez sélectionner un chant pour commencer.
                   </p>
                 </div>
+              ) : selectedId && !editMode ? (
+                <SongReadingView
+                  key={selectedId}
+                  chordproText={editorText}
+                  referenceUrl={selectedSong?.referenceUrl ?? null}
+                  audioUrl={selectedSong?.audioUrl ?? null}
+                  songId={selectedId}
+                  onEditClick={() => setEditMode(true)}
+                  onImport={onImportClick}
+                  onExport={onExport}
+                  onDelete={onDelete}
+                />
               ) : (
-              <div className="mx-auto max-w-3xl space-y-4">
+              <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
+              {/* Toolbar édition : Save, Cancel, menu ... */}
+              <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 shrink-0">
+                <div className="relative" ref={editMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setEditMenuOpen((o) => !o)}
+                    className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-800 p-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                    title="Menu"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="5" cy="12" r="1" />
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                    </svg>
+                  </button>
+                  {editMenuOpen ? (
+                    <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onImportClick();
+                          setEditMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        Import
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onExport();
+                          setEditMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Export
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDelete();
+                          setEditMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        Supprimer le chant
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  {(dirty || editMode) && onCancel ? (
+                    <button
+                      onClick={onCancel}
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                  {dirty ? (
+                    <button
+                      onClick={onSave}
+                      disabled={saving}
+                      className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:from-accent-600 hover:to-accent-700 disabled:opacity-60 disabled:from-accent-500 disabled:to-accent-600 transition-all"
+                      title="Ctrl/Cmd+S"
+                    >
+                      Save
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {/* Contenu éditeur scrollable */}
+              <div className="flex-1 min-h-0 overflow-auto">
+              <div className="mx-auto max-w-3xl space-y-4 px-4 py-4">
               {/* Titre + Artiste : flex row comme Fretlist */}
               <div className="flex flex-col md:flex-row gap-4">
                 <label className="flex-1 min-w-0 space-y-2">
@@ -715,7 +857,7 @@ export default function AdminClient() {
                             type="button"
                             onClick={() => audioInputRef.current?.click()}
                             disabled={!selectedId || uploadingAudio}
-                            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-3 py-1.5 text-sm text-accent-600 dark:text-accent-200 disabled:opacity-50"
+                            className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white transition-all disabled:opacity-50"
                           >
                             {uploadingAudio ? "Upload..." : "Upload audio"}
                           </button>
@@ -771,12 +913,14 @@ export default function AdminClient() {
                 />
               </div>
               </div>
+              </div>
+              </div>
               )}
             </div>
           </div>
 
-          {/* Barre de redimensionnement (style Fretlist) */}
-          {previewOpen && (
+          {/* Barre de redimensionnement (style Fretlist) - visible uniquement en mode édition */}
+          {editMode && previewOpen && (
             <div
               role="separator"
               aria-orientation="vertical"
@@ -788,8 +932,8 @@ export default function AdminClient() {
             </div>
           )}
 
-          {/* Preview live : largeur redimensionnable (style Fretlist) */}
-          {previewOpen ? (
+          {/* Preview live : largeur redimensionnable (style Fretlist) - visible uniquement en mode édition */}
+          {editMode ? (previewOpen ? (
             <aside
               className="shrink-0 overflow-auto border-l border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/30"
               style={{ width: previewWidth }}
@@ -826,7 +970,7 @@ export default function AdminClient() {
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </button>
-          )}
+          )) : null}
         </div>
       </div>
 

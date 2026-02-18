@@ -8,8 +8,8 @@ const inter = Inter({ subsets: ["latin"] });
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
 
 export const metadata: Metadata = {
-  title: "Harmony — Admin Songbook",
-  description: "Admin-only songbook (ChordPro)",
+  title: "Harmony",
+  description: "Songbook ChordPro",
 };
 
 export default async function RootLayout({
