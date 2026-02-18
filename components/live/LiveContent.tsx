@@ -18,8 +18,8 @@ export function LiveContent({ doc, title, artist, keyDisplay }: Props) {
   const displayDoc: ChordProDocument = {
     ...doc,
     title: doc.title || title,
-    artist: doc.artist || artist ?? undefined,
-    key: doc.key || keyDisplay ?? undefined,
+    artist: (doc.artist || artist) ?? undefined,
+    key: (doc.key || keyDisplay) ?? undefined,
   };
 
   return (
