@@ -12,7 +12,7 @@ export type UserPreferences = z.infer<typeof preferencesSchema>;
 
 export async function GET() {
   const session = await getServerAuthSession();
-  if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!session || !isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const userId = session.user?.id;
   if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const session = await getServerAuthSession();
-  if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!session || !isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const userId = session.user?.id;
   if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
