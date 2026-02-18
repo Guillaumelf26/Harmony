@@ -10,6 +10,12 @@ const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
 export const metadata: Metadata = {
   title: "Harmony",
   description: "Songbook ChordPro",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Harmony",
+  },
 };
 
 export default async function RootLayout({

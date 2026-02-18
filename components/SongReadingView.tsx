@@ -58,18 +58,18 @@ export function SongReadingView({
               <button
                 type="button"
                 onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-2.5 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
                 title="-1 demi-ton"
               >
                 −
               </button>
-              <span className="min-w-[2rem] text-center text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <span className="flex h-9 min-w-[2.25rem] items-center justify-center text-sm font-medium text-white">
                 {transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}
               </span>
               <button
                 type="button"
                 onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-2.5 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
                 title="+1 demi-ton"
               >
                 +
@@ -78,7 +78,7 @@ export function SongReadingView({
                 <button
                   type="button"
                   onClick={() => setTransposeSemitones(0)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors ml-1"
+                  className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-zinc-800/80 px-2 text-xs font-medium text-white hover:bg-zinc-700 transition-colors ml-1"
                   title="Réinitialiser"
                 >
                   Reset
@@ -91,7 +91,7 @@ export function SongReadingView({
               href={referenceUrl.trim().startsWith("http") ? referenceUrl.trim() : `https://${referenceUrl.trim()}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 p-2 text-white transition-all"
+              className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
               title="Ouvrir le lien"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -104,10 +104,10 @@ export function SongReadingView({
           <button
             type="button"
             onClick={handleToggleFavorite}
-            className={`rounded-lg p-2 transition-all ${
+            className={`rounded-lg p-2 transition-colors ${
               isFav
-                ? "bg-accent-500/20 text-accent-600 dark:text-accent-400 hover:bg-accent-500/30"
-                : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                ? "bg-accent-500/20 text-accent-500 dark:text-accent-400 hover:bg-accent-500/30"
+                : "bg-zinc-800/80 text-white hover:bg-zinc-700"
             }`}
             title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
@@ -136,7 +136,7 @@ export function SongReadingView({
                 <button
                   type="button"
                   onClick={() => setMenuOpen((o) => !o)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-800 p-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                  className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
                   title="Menu"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -207,7 +207,7 @@ export function SongReadingView({
           </div>
           <Link
             href={`/live/${songId}`}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-600 bg-zinc-100 dark:bg-zinc-800 p-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+            className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
             title="Mode live"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -217,7 +217,7 @@ export function SongReadingView({
           <button
             type="button"
             onClick={onEditClick}
-            className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 p-2 text-white hover:from-accent-600 hover:to-accent-700 transition-all"
+            className="rounded-lg bg-accent-500 p-2 text-white hover:bg-accent-600 transition-colors"
             title="Modifier le chant"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
