@@ -4,9 +4,22 @@ const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
+const DEFAULT_PASSWORD = "admin1234";
+
 async function main() {
-  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
-  const password = process.env.SEED_ADMIN_PASSWORD ?? "admin1234";
+  const isProd = process.env.NODE_ENV === "production";
+  const email = process.env.SEED_ADMIN_EMAIL ?? (isProd ? null : "admin@example.com");
+  const password = process.env.SEED_ADMIN_PASSWORD ?? (isProd ? null : DEFAULT_PASSWORD);
+
+  if (isProd) {
+    if (!email || !password || password === DEFAULT_PASSWORD) {
+      // eslint-disable-next-line no-console
+      console.error(
+        "ERREUR: En production, définis SEED_ADMIN_EMAIL et SEED_ADMIN_PASSWORD (différent de admin1234)."
+      );
+      process.exit(1);
+    }
+  }
 
   const passwordHash = await bcrypt.hash(password, 12);
 

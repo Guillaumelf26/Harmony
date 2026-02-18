@@ -10,8 +10,9 @@ export default function LoginClient() {
   const from = params.get("from") ?? "/admin";
   const errorParam = params.get("error");
 
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("admin1234");
+  const isProd = process.env.NODE_ENV === "production";
+  const [email, setEmail] = useState(isProd ? "" : "admin@example.com");
+  const [password, setPassword] = useState(isProd ? "" : "admin1234");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -101,10 +102,12 @@ export default function LoginClient() {
             {isPending ? "Connexion..." : "Se connecter"}
           </button>
 
-          <div className="text-xs text-zinc-500">
-            Par défaut (seed): <span className="font-mono">admin@example.com</span> /{" "}
-            <span className="font-mono">admin1234</span>
-          </div>
+          {!isProd && (
+            <div className="text-xs text-zinc-500">
+              Par défaut (seed): <span className="font-mono">admin@example.com</span> /{" "}
+              <span className="font-mono">admin1234</span>
+            </div>
+          )}
         </form>
       </div>
     </div>
