@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       tags,
       chordproText: data.chordproText ?? "",
       audioUrl: data.audioUrl ?? null,
+      referenceUrl: data.referenceUrl?.trim() || null,
     },
   });
 

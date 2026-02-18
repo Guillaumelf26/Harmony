@@ -47,6 +47,7 @@ export async function PUT(req: Request, { params }: Params) {
   if (patch.chordproText !== undefined) data.chordproText = patch.chordproText ?? "";
   if (patch.tags !== undefined) data.tags = normalizeTags(patch.tags ?? []);
   if (patch.audioUrl !== undefined) data.audioUrl = patch.audioUrl ?? null;
+  if (patch.referenceUrl !== undefined) data.referenceUrl = patch.referenceUrl?.trim() || null;
 
   try {
     const updated = await prisma.song.update({

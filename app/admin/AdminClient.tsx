@@ -30,6 +30,7 @@ type Song = {
   tags: unknown;
   chordproText: string;
   audioUrl: string | null;
+  referenceUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -65,6 +66,7 @@ export default function AdminClient() {
   const [metaArtist, setMetaArtist] = useState("");
   const [metaKey, setMetaKey] = useState("");
   const [metaTags, setMetaTags] = useState("");
+  const [metaReferenceUrl, setMetaReferenceUrl] = useState("");
   const [activeChordInfo, setActiveChordInfo] =
     useState<ChordAtCursorInfo | null>(null);
   const [popupCoords, setPopupCoords] = useState<{
@@ -128,6 +130,7 @@ export default function AdminClient() {
     setMetaArtist(song.artist ?? "");
     setMetaKey(song.key ?? "");
     setMetaTags(tagsFromUnknown(song.tags).join(", "));
+    setMetaReferenceUrl(song.referenceUrl ?? "");
     setActiveChordInfo(null);
     setDirty(false);
   }
@@ -162,6 +165,7 @@ export default function AdminClient() {
     setMetaArtist("");
     setMetaKey("");
     setMetaTags("");
+    setMetaReferenceUrl("");
     setEditorText("{title: Nouveau chant}\n\n");
     setActiveChordInfo(null);
     setDirty(true);
@@ -189,6 +193,7 @@ export default function AdminClient() {
             key,
             tags,
             chordproText: editorText,
+            referenceUrl: metaReferenceUrl.trim() || null,
           }),
         });
         if (!res.ok) throw new Error("save_failed");
@@ -198,6 +203,7 @@ export default function AdminClient() {
         setMetaArtist(updated.artist ?? artist ?? "");
         setMetaKey(updated.key ?? key ?? "");
         setMetaTags(tagsFromUnknown(updated.tags).join(", "));
+        setMetaReferenceUrl(updated.referenceUrl ?? "");
         setDirty(false);
         await refreshList();
         return;
@@ -213,6 +219,7 @@ export default function AdminClient() {
           key,
           tags,
           chordproText: editorText,
+          referenceUrl: metaReferenceUrl.trim() || null,
         }),
       });
       if (!res.ok) throw new Error("create_failed");
@@ -222,6 +229,7 @@ export default function AdminClient() {
       setMetaTitle(created.title ?? title);
       setMetaArtist(created.artist ?? artist ?? "");
       setMetaKey(created.key ?? key ?? "");
+      setMetaReferenceUrl(created.referenceUrl ?? "");
       setMetaTags(tagsFromUnknown(created.tags).join(", "));
       setDirty(false);
       await refreshList();
@@ -254,6 +262,7 @@ export default function AdminClient() {
     setMetaArtist("");
     setMetaKey("");
     setMetaTags("");
+    setMetaReferenceUrl("");
     setActiveChordInfo(null);
     setDirty(false);
     await refreshList();
@@ -526,6 +535,19 @@ export default function AdminClient() {
                   </div>
                 )}
               </div>
+              <label className="col-span-12">
+                <div className="text-xs text-zinc-400">Lien original (YouTube, etc.)</div>
+                <input
+                  type="url"
+                  value={metaReferenceUrl}
+                  onChange={(e) => {
+                    setMetaReferenceUrl(e.target.value);
+                    setDirty(true);
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </label>
             </div>
           </div>
 
