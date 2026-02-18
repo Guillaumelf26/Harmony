@@ -48,11 +48,14 @@ export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
     [ref]
   );
 
+  const fillParent = height === "100%";
+
   return (
-    <div className="chordpro-editor min-w-0 overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/30 backdrop-blur-sm">
-      <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
+    <div className={`chordpro-editor min-w-0 overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/30 backdrop-blur-sm flex flex-col ${fillParent ? "h-full min-h-0" : ""}`}>
+      <div className="border-b border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400 shrink-0">
         Éditeur (ChordPro)
       </div>
+      <div className={fillParent ? "flex-1 min-h-0" : ""}>
       <CodeMirror
         ref={(r) => assignRef(ref, r ? { view: r.view } : { view: undefined })}
         onCreateEditor={onCreator}
@@ -91,6 +94,7 @@ export const EditorPane = forwardRef<EditorPaneRef, Props>(function EditorPane(
         }}
         onChange={onChange}
       />
+      </div>
     </div>
   );
 });
