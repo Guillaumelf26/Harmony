@@ -8,13 +8,14 @@ type Props = {
   title: string;
   artist: string | null;
   keyDisplay: string | null;
+  hasAudio?: boolean;
 };
 
 /**
  * Rendu du contenu ChordPro en mode live.
  * Utilise les métadonnées du doc (parsing) avec fallback sur les données du chant.
  */
-export function LiveContent({ doc, title, artist, keyDisplay }: Props) {
+export function LiveContent({ doc, title, artist, keyDisplay, hasAudio }: Props) {
   const displayDoc: ChordProDocument = {
     ...doc,
     title: doc.title || title,
@@ -23,7 +24,7 @@ export function LiveContent({ doc, title, artist, keyDisplay }: Props) {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-auto overscroll-contain px-4 py-6">
+    <div className={`flex-1 min-h-0 overflow-auto overscroll-contain px-4 py-6 ${hasAudio ? "pb-24" : ""}`}>
       <div className="mx-auto max-w-2xl">
         <div className="border border-transparent p-6">
           <ChordProPreview doc={displayDoc} />

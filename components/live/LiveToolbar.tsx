@@ -3,40 +3,25 @@
 type Props = {
   transposeSemitones: number;
   onTransposeChange: (n: number) => void;
-  audioUrl: string | null;
   referenceUrl: string | null;
   onBack: () => void;
   isFullscreen: boolean;
-  onExitFullscreen: () => void;
+  canFullscreen?: boolean;
+  onToggleFullscreen: () => void;
 };
 
 export function LiveToolbar({
   transposeSemitones,
   onTransposeChange,
-  audioUrl,
   referenceUrl,
   onBack,
   isFullscreen,
-  onExitFullscreen,
+  canFullscreen = true,
+  onToggleFullscreen,
 }: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-950/80 shrink-0">
       <div className="flex items-center gap-3">
-        {isFullscreen ? (
-          <button
-            type="button"
-            onClick={onExitFullscreen}
-            className="rounded-lg p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80 transition-colors"
-            title="Quitter le plein écran"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-              <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-              <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-              <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-            </svg>
-          </button>
-        ) : null}
         <button
           type="button"
           onClick={onBack}
@@ -96,10 +81,32 @@ export function LiveToolbar({
             </svg>
           </a>
         ) : null}
-        {audioUrl ? (
-          <div className="flex-1 min-w-[200px] max-w-[360px]">
-            <audio src={audioUrl} controls className="audio-player w-full h-8" />
-          </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {canFullscreen ? (
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-100 transition-colors"
+          title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+          aria-label={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+        >
+          {isFullscreen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+              <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+              <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+              <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+              <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          )}
+        </button>
         ) : null}
       </div>
     </div>

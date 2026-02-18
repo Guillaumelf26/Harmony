@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { parseChordPro } from "@/chordpro/parse";
+import { AudioPlayerBar } from "@/components/AudioPlayerBar";
 import { ChordProPreview } from "@/chordpro/render";
 import { transposeChordProText } from "@/lib/transposeChord";
 import { useFavorites } from "@/components/FavoritesProvider";
@@ -17,6 +18,8 @@ type Props = {
   onImport?: () => void;
   onExport?: () => void;
   onDelete?: () => void;
+  /** Quand true, le player ne doit pas chevaucher le volet gauche (sidebar) */
+  sidebarOpen?: boolean;
 };
 
 export function SongReadingView({
@@ -28,6 +31,7 @@ export function SongReadingView({
   onImport,
   onExport,
   onDelete,
+  sidebarOpen = false,
 }: Props) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [transposeSemitones, setTransposeSemitones] = useState(0);
@@ -123,11 +127,6 @@ export function SongReadingView({
               <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
             </svg>
           </button>
-          {audioUrl ? (
-            <div className="flex-1 min-w-[280px] max-w-[420px]">
-              <audio src={audioUrl} controls className="audio-player w-full h-8" />
-            </div>
-          ) : null}
         </div>
         <div className="flex items-center gap-3">
           <div className="relative" ref={menuRef}>
@@ -228,13 +227,22 @@ export function SongReadingView({
       </div>
 
       {/* Contenu : preview - sans encadré visible */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-6">
+      <div className={`flex-1 min-h-0 overflow-auto px-4 py-6 ${audioUrl ? "pb-24" : ""}`}>
         <div className="mx-auto max-w-2xl">
           <div className="border border-transparent bg-transparent p-6">
             <ChordProPreview doc={doc} />
           </div>
         </div>
       </div>
+
+      {/* Player audio fixe en bas, style Spotify (ne chevauche pas le volet gauche) */}
+      {audioUrl ? (
+        <div
+          className={`fixed bottom-0 right-0 z-50 flex items-center justify-center px-4 py-4 backdrop-blur-md bg-black/40 dark:bg-zinc-950/70 ${sidebarOpen ? "left-72 xl:left-80" : "left-0"}`}
+        >
+          <AudioPlayerBar src={audioUrl} />
+        </div>
+      ) : null}
     </div>
   );
 }

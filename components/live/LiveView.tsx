@@ -6,6 +6,7 @@ import { parseChordPro } from "@/chordpro/parse";
 import { transposeChordProText } from "@/lib/transposeChord";
 import { LiveToolbar } from "./LiveToolbar";
 import { LiveContent } from "./LiveContent";
+import { AudioPlayerBar } from "@/components/AudioPlayerBar";
 
 function isIOSStandalone() {
   if (typeof window === "undefined") return false;
@@ -40,8 +41,10 @@ export function LiveView({
   const [transposeSemitones, setTransposeSemitones] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIOSHint, setShowIOSHint] = useState(false);
+  const [canFullscreen, setCanFullscreen] = useState(false);
 
   useEffect(() => {
+    setCanFullscreen(document.fullscreenEnabled);
     if (document.fullscreenEnabled) {
       const el = document.documentElement;
       el.requestFullscreen().then(
@@ -57,9 +60,12 @@ export function LiveView({
     }
   }, []);
 
-  function handleExitFullscreen() {
+  function handleToggleFullscreen() {
+    if (!document.fullscreenEnabled) return;
     if (document.fullscreenElement) {
       document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
     }
   }
 
@@ -108,13 +114,18 @@ export function LiveView({
       <LiveToolbar
         transposeSemitones={transposeSemitones}
         onTransposeChange={setTransposeSemitones}
-        audioUrl={audioUrl}
         referenceUrl={referenceUrl}
         onBack={handleBack}
         isFullscreen={isFullscreen}
-        onExitFullscreen={handleExitFullscreen}
+        canFullscreen={canFullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
       />
-      <LiveContent doc={doc} title={title} artist={artist} keyDisplay={keyDisplay} />
+      <LiveContent doc={doc} title={title} artist={artist} keyDisplay={keyDisplay} hasAudio={!!audioUrl} />
+      {audioUrl ? (
+        <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center px-4 py-4 backdrop-blur-md bg-black/40">
+          <AudioPlayerBar src={audioUrl} />
+        </div>
+      ) : null}
     </div>
   );
 }

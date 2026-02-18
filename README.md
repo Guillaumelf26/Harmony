@@ -51,6 +51,7 @@ npm run dev
 Puis ouvre :
 - `http://localhost:3000/login`
 - `http://localhost:3000/admin`
+- `http://localhost:3000/live/[songId]` — mode lecture live (sans auth)
 
 ## Commandes utiles
 - **Dev** : `npm run dev`
@@ -74,6 +75,10 @@ Puis ouvre :
 - **Favoris** : stockés en base (synchronisés entre appareils), filtre Tout/Favoris
 - **Session** : avatar avec menu (Paramètres, déconnexion)
 - **Raccourci** : Ctrl/Cmd+S pour sauvegarder
+- **Mode live** : route `/live/[songId]` pour affichage plein écran (tablette, scène) — public, sans auth
+- **Player audio** : barre fixe en bas (style Spotify), play/pause + progression
+- **Plein écran** : bouton à demeure dans le header (admin et live)
+- **PWA** : ajout à l’écran d’accueil sur iPhone pour affichage standalone
 
 ## Mise en production
 
@@ -109,8 +114,9 @@ npm test
 ```
 
 ## Structure
-- `app/` : routes Next.js (login, admin, api)
-- `components/` : SidebarSongList, Toolbar, EditorPane, SongReadingView, FavoritesProvider, etc.
-- `lib/` : prisma, auth, rbac, validators, useClickOutside, transposeChord, chordAtCursor
+- `app/` : routes Next.js (login, admin, live, api)
+- `components/` : SidebarSongList, Toolbar, EditorPane, SongReadingView, AudioPlayerBar, FullscreenToggle, FavoritesProvider, etc.
+- `components/live/` : LiveView, LiveToolbar, LiveContent
+- `lib/` : prisma, auth, rbac, validators, services (songs), useClickOutside, transposeChord, chordAtCursor
 - `chordpro/` : parse + render
 - `prisma/` : schema, migrations, seed

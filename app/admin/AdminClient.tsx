@@ -11,6 +11,7 @@ import { SidebarSongList } from "@/components/SidebarSongList";
 import { SongReadingView } from "@/components/SongReadingView";
 import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
+import { FullscreenToggle } from "@/components/FullscreenToggle";
 import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
 import { getChordsForKey } from "@/lib/chordsByKey";
 import { appendChordExtension } from "@/lib/chordAtCursor";
@@ -71,6 +72,7 @@ export default function AdminClient() {
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const editAudioRef = useRef<HTMLAudioElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const editMenuRef = useRef<HTMLDivElement>(null);
@@ -163,6 +165,8 @@ export default function AdminClient() {
   }
 
   async function loadSong(id: string) {
+    editAudioRef.current?.pause();
+    editAudioRef.current = null;
     const res = await fetch(`/api/songs/${id}`, { cache: "no-store" });
     if (!res.ok) return;
     const song = (await res.json()) as Song;
@@ -202,6 +206,7 @@ export default function AdminClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [songFromUrl, songs.length]);
 
+
   async function onSelect(id: string) {
     if (dirty && selectedId !== id) {
       const ok = window.confirm("Changements non sauvegardés. Continuer sans sauvegarder ?");
@@ -212,6 +217,8 @@ export default function AdminClient() {
 
   async function onCancel() {
     if (editMode && !dirty) {
+      editAudioRef.current?.pause();
+      editAudioRef.current = null;
       setEditMode(false);
       return;
     }
@@ -574,7 +581,10 @@ export default function AdminClient() {
           ) : (
             <div className="flex-1" />
           )}
-          <SessionMenu />
+          <div className="flex items-center gap-2">
+            <FullscreenToggle />
+            <SessionMenu />
+          </div>
         </div>
         </header>
 
@@ -600,6 +610,7 @@ export default function AdminClient() {
                   onImport={onImportClick}
                   onExport={onExport}
                   onDelete={onDelete}
+                  sidebarOpen={sidebarOpen}
                 />
               ) : (
               <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
@@ -819,6 +830,7 @@ export default function AdminClient() {
                       {selectedSong?.audioUrl ? (
                         <div className="flex flex-wrap items-center gap-2">
                           <audio
+                            ref={editAudioRef}
                             src={selectedSong.audioUrl}
                             controls
                             className="audio-player h-8 max-w-full min-w-[200px]"
