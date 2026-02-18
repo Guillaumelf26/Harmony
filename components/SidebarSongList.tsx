@@ -14,6 +14,7 @@ type Props = {
   songs: SongListItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onNew?: () => void;
   /** Mode overlay : bouton fermer (×) au lieu de « */
   overlay?: boolean;
 };
@@ -26,6 +27,7 @@ export function SidebarSongList({
   songs,
   selectedId,
   onSelect,
+  onNew,
   overlay = false,
 }: Props) {
   return (
@@ -50,12 +52,28 @@ export function SidebarSongList({
 
       {collapsed ? null : (
         <div className="p-3">
-          <input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Recherche titre / artiste"
-            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
-          />
+          <div className="flex gap-2">
+            <input
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="Recherche titre / artiste"
+              className="flex-1 min-w-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
+            />
+            {onNew ? (
+              <button
+                type="button"
+                onClick={onNew}
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900 transition-colors"
+                title="Nouveau chant"
+                aria-label="Nouveau chant"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
 

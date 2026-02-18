@@ -10,15 +10,10 @@ export function renderChordProToLines(doc: ChordProDocument): RenderLine[] {
       continue;
     }
     if (line.type === "directive") {
-      const label =
-        line.directive.type === "title"
-          ? "Titre"
-          : line.directive.type === "artist"
-            ? "Artiste"
-            : line.directive.type === "key"
-              ? "Tonalité"
-              : line.directive.name;
-      lines.push({ chords: "", lyrics: `${label}: ${line.directive.value}` });
+      if (line.directive.type === "title" || line.directive.type === "artist" || line.directive.type === "key") {
+        continue;
+      }
+      lines.push({ chords: "", lyrics: `${line.directive.name}: ${line.directive.value}` });
       continue;
     }
     lines.push(renderTextLine(line));
@@ -56,6 +51,22 @@ export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
   const lines = renderChordProToLines(doc);
   return (
     <div className="text-sm leading-relaxed">
+      {doc.title ? (
+        <h2 className="text-2xl md:text-3xl font-lora font-medium mb-1 text-zinc-900 dark:text-zinc-100">
+          {doc.title}
+        </h2>
+      ) : null}
+      <div className="flex items-center gap-2 mb-4">
+        {doc.artist ? (
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">{doc.artist}</span>
+        ) : null}
+        {doc.artist && doc.key ? (
+          <span className="text-zinc-400 dark:text-zinc-600">·</span>
+        ) : null}
+        {doc.key ? (
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{doc.key}</span>
+        ) : null}
+      </div>
       {lines.map(({ chords, lyrics }, idx) => {
         const isEmpty = !chords && !lyrics;
         return (

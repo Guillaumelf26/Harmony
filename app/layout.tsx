@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Lora } from "next/font/google";
 import { cookies } from "next/headers";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
+const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
 
 export const metadata: Metadata = {
   title: "Harmony — Admin Songbook",
@@ -20,7 +21,7 @@ export default async function RootLayout({
   const theme = cookieStore.get("harmony-theme")?.value ?? "dark";
   return (
     <html lang="fr" className={theme === "dark" ? "dark" : ""} suppressHydrationWarning>
-      <body className={`${inter.className} bg-zinc-50 dark:bg-[#030712]`}>
+      <body className={`${inter.className} ${lora.variable} bg-zinc-50 dark:bg-[#030712]`}>
         <Providers>{children}</Providers>
       </body>
     </html>

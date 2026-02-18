@@ -2,8 +2,8 @@ type Props = {
   dirty: boolean;
   saving: boolean;
   hasSelection: boolean;
-  onNew: () => void;
   onSave: () => void;
+  onCancel?: () => void;
   onDelete: () => void;
   onExport: () => void;
   onImport: () => void;
@@ -13,8 +13,8 @@ export function Toolbar({
   dirty,
   saving,
   hasSelection,
-  onNew,
   onSave,
+  onCancel,
   onDelete,
   onExport,
   onImport,
@@ -31,12 +31,14 @@ export function Toolbar({
           {saving ? "Sauvegarde..." : dirty ? "Modifié" : "Sauvegardé"}
         </div>
 
-        <button
-          onClick={onNew}
-          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
-        >
-          New
-        </button>
+        {dirty && onCancel ? (
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
+          >
+            Cancel
+          </button>
+        ) : null}
         <button
           onClick={onSave}
           disabled={saving || !dirty}
@@ -48,9 +50,17 @@ export function Toolbar({
         <button
           onClick={onDelete}
           disabled={!hasSelection}
-          className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900 disabled:opacity-60"
+          className="rounded-lg p-2 text-red-500 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+          title="Supprimer"
+          aria-label="Supprimer"
         >
-          Delete
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
         </button>
         <button
           onClick={onImport}

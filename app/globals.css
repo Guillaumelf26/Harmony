@@ -6,6 +6,9 @@
   .text-balance {
     text-wrap: balance;
   }
+  .font-lora {
+    font-family: var(--font-lora), Georgia, serif;
+  }
 }
 
 /* Fond éditeur ChordPro aligné sur les encadrés (titre, etc.) */
@@ -16,6 +19,18 @@
 }
 .chordpro-editor .cm-gutters {
   background-color: transparent !important;
+}
+
+/* Player audio en thème sombre */
+.dark .audio-player {
+  color-scheme: dark;
+}
+.dark .audio-player::-webkit-media-controls-panel {
+  background-color: rgb(39 39 42);
+}
+.dark .audio-player::-webkit-media-controls-enclosure {
+  background-color: rgb(39 39 42);
+  border-radius: 6px;
 }
 
 /* Overlay bruit subtil (style Fretlist) */

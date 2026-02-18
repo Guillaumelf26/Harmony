@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
@@ -51,6 +52,7 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export default function AdminClient() {
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(true);
   const [previewWidth, setPreviewWidth] = useState(470);
@@ -180,6 +182,23 @@ export default function AdminClient() {
       if (!ok) return;
     }
     await loadSong(id);
+  }
+
+  async function onCancel() {
+    if (selectedId) {
+      await loadSong(selectedId);
+    } else {
+      setSelectedId(null);
+      setSelectedSong(null);
+      setMetaTitle("");
+      setMetaArtist("");
+      setMetaKey("");
+      setMetaTags("");
+      setMetaReferenceUrl("");
+      setEditorText("");
+      setActiveChordInfo(null);
+      setDirty(false);
+    }
   }
 
   async function onNew() {
@@ -470,6 +489,7 @@ export default function AdminClient() {
             songs={songs}
             selectedId={selectedId}
             onSelect={onSelect}
+            onNew={onNew}
           />
         </aside>
       )}
@@ -494,24 +514,13 @@ export default function AdminClient() {
             dirty={dirty}
             saving={saving}
             hasSelection={!!selectedId}
-            onNew={onNew}
             onSave={onSave}
+            onCancel={onCancel}
             onDelete={onDelete}
             onExport={onExport}
             onImport={onImportClick}
           />
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPreviewOpen((v) => !v)}
-              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-              title={previewOpen ? "Masquer la preview" : "Afficher la preview"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
             <Link
               href="/admin/settings"
               className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
@@ -542,6 +551,13 @@ export default function AdminClient() {
           {/* Zone éditeur : flex-1 min-w-0 (style Fretlist) */}
           <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
             <div className="flex-1 min-h-0 min-w-0 overflow-auto px-4 py-4">
+              {!selectedId ? (
+                <div className="flex flex-col items-center justify-center min-h-full text-center px-4">
+                  <p className="text-lg text-zinc-600 dark:text-zinc-400">
+                    Bonjour {session?.user?.name ?? session?.user?.email?.split("@")[0] ?? "Utilisateur"}, veuillez sélectionner un chant pour commencer.
+                  </p>
+                </div>
+              ) : (
               <div className="mx-auto max-w-3xl space-y-4">
               {/* Titre + Artiste : flex row comme Fretlist */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -634,16 +650,33 @@ export default function AdminClient() {
                     </label>
                     <label className="block">
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Lien original (YouTube, etc.)</div>
-                      <input
-                        type="url"
-                        value={metaReferenceUrl}
-                        onChange={(e) => {
-                          setMetaReferenceUrl(e.target.value);
-                          setDirty(true);
-                        }}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors"
-                      />
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={metaReferenceUrl}
+                          onChange={(e) => {
+                            setMetaReferenceUrl(e.target.value);
+                            setDirty(true);
+                          }}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          className={`w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/30 px-3 py-2 text-sm outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-indigo-500 transition-colors ${metaReferenceUrl.trim() ? "pr-10" : ""}`}
+                        />
+                        {metaReferenceUrl.trim() ? (
+                          <a
+                            href={metaReferenceUrl.trim().startsWith("http") ? metaReferenceUrl.trim() : `https://${metaReferenceUrl.trim()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                            title="Ouvrir le lien"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          </a>
+                        ) : null}
+                      </div>
                     </label>
                     <div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Audio</div>
@@ -652,7 +685,7 @@ export default function AdminClient() {
                           <audio
                             src={selectedSong.audioUrl}
                             controls
-                            className="h-8 max-w-full min-w-[200px]"
+                            className="audio-player h-8 max-w-full min-w-[200px]"
                           />
                           <button
                             type="button"
@@ -731,6 +764,7 @@ export default function AdminClient() {
                 />
               </div>
               </div>
+              )}
             </div>
           </div>
 
