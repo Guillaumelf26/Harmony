@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { isAdminSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { getSongById } from "@/lib/services/songs";
 import { normalizeTags, songPatchSchema } from "@/lib/validators";
 
 type Params = { params: { id: string } };
@@ -19,7 +20,7 @@ export async function GET(_req: Request, { params }: Params) {
     if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const song = await prisma.song.findUnique({ where: { id: params.id } });
+  const song = await getSongById(params.id);
   if (!song) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
   return NextResponse.json(song);

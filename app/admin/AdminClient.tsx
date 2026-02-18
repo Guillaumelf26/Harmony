@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
@@ -50,6 +51,8 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export default function AdminClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -186,6 +189,18 @@ export default function AdminClient() {
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sortBy, sortOrder]);
+
+  const songFromUrl = searchParams.get("song");
+  useEffect(() => {
+    if (songFromUrl && songs.length > 0 && songFromUrl !== selectedId) {
+      const exists = songs.some((s) => s.id === songFromUrl);
+      if (exists) {
+        void loadSong(songFromUrl);
+        router.replace("/admin", { scroll: false });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songFromUrl, songs.length]);
 
   async function onSelect(id: string) {
     if (dirty && selectedId !== id) {
