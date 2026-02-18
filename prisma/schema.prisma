@@ -23,12 +23,26 @@ model User {
   preferences  Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  favorites    UserFavorite[]
+}
+
+model UserFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  songId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, songId])
+  @@index([userId])
 }
 
 model Song {
   id            String   @id @default(cuid())
   title         String
   artist        String?
+  favoritedBy   UserFavorite[]
   key           String?
   tempo         Int?
   timeSignature String?

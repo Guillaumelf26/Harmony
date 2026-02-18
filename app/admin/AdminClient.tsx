@@ -59,6 +59,7 @@ export default function AdminClient() {
   const [previewWidth, setPreviewWidth] = useState(470);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [query, setQuery] = useState("");
+  const [filterFavorites, setFilterFavorites] = useState<"all" | "favorites">("all");
   const [sortBy, setSortBy] = useState<"title" | "artist" | "updatedAt">("updatedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [songs, setSongs] = useState<SongListItem[]>([]);
@@ -519,6 +520,8 @@ export default function AdminClient() {
             onToggleCollapsed={() => setSidebarOpen(false)}
             query={query}
             onQueryChange={setQuery}
+            filterFavorites={filterFavorites}
+            onFilterFavoritesChange={setFilterFavorites}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSortChange={(by, order) => {

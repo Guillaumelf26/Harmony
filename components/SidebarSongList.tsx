@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useFavorites } from "@/components/FavoritesProvider";
 
 type SongListItem = {
   id: string;
@@ -18,6 +19,8 @@ type Props = {
   sortBy?: "title" | "artist" | "updatedAt";
   sortOrder?: "asc" | "desc";
   onSortChange?: (by: "title" | "artist" | "updatedAt", order: "asc" | "desc") => void;
+  filterFavorites?: "all" | "favorites";
+  onFilterFavoritesChange?: (v: "all" | "favorites") => void;
   songs: SongListItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -36,6 +39,8 @@ export function SidebarSongList({
   sortBy = "updatedAt",
   sortOrder = "desc",
   onSortChange,
+  filterFavorites = "all",
+  onFilterFavoritesChange,
   songs,
   selectedId,
   onSelect,
@@ -43,8 +48,25 @@ export function SidebarSongList({
   overlay = false,
   hideCollapseButton = false,
 }: Props) {
+  const { favorites } = useFavorites();
   const [sortOpen, setSortOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  const filteredSongs =
+    filterFavorites === "favorites"
+      ? songs.filter((s) => favorites.includes(s.id))
+      : songs;
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const h = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    };
+    document.addEventListener("click", h);
+    return () => document.removeEventListener("click", h);
+  }, [filterOpen]);
 
   const sortOptions: { value: string; label: string }[] = [
     { value: "updatedAt-desc", label: "Plus récent" },
@@ -111,8 +133,51 @@ export function SidebarSongList({
               </button>
             ) : null}
           </div>
+          {(onSortChange || onFilterFavoritesChange) ? (
+            <div className="flex flex-wrap gap-2 items-center">
+          {onFilterFavoritesChange ? (
+            <div className="relative" ref={filterRef}>
+              <button
+                type="button"
+                onClick={() => setFilterOpen((o) => !o)}
+                className="rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[100px] justify-between"
+              >
+                <span>{filterFavorites === "favorites" ? "Favoris" : "Tout"}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={filterOpen ? "rotate-180" : ""}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {filterOpen ? (
+                <div className="absolute left-0 top-full mt-2 z-50 min-w-[140px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onFilterFavoritesChange("all");
+                      setFilterOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${filterFavorites === "all" ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"}`}
+                  >
+                    Tout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onFilterFavoritesChange("favorites");
+                      setFilterOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-3 ${filterFavorites === "favorites" ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={filterFavorites === "favorites" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="shrink-0">
+                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                    </svg>
+                    Favoris
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {onSortChange ? (
-            <div className="flex flex-wrap gap-2 items-center" ref={sortRef}>
+            <div className="relative" ref={sortRef}>
               <div className="relative">
                 <button
                   type="button"
@@ -151,15 +216,20 @@ export function SidebarSongList({
             </div>
           ) : null}
         </div>
+      ) : null}
+        </div>
       )}
 
       <div className={`flex-1 min-h-0 overflow-auto space-y-1 ${collapsed ? "p-2" : "px-2 pb-2"}`}>
-        {songs.length === 0 ? (
-          <div className="px-2 py-3 text-xs text-zinc-500 dark:text-zinc-500">Aucun chant.</div>
+        {filteredSongs.length === 0 ? (
+          <div className="px-2 py-3 text-xs text-zinc-500 dark:text-zinc-500">
+            {filterFavorites === "favorites" ? "Aucun favori." : "Aucun chant."}
+          </div>
         ) : null}
 
-        {songs.map((s) => {
+        {filteredSongs.map((s) => {
           const active = s.id === selectedId;
+          const isFavorite = favorites.includes(s.id);
           return (
             <button
               key={s.id}
@@ -171,7 +241,18 @@ export function SidebarSongList({
                   : "border-l-4 border-l-transparent pl-3 pr-3 hover:bg-zinc-100 dark:hover:bg-zinc-900/60",
               ].join(" ")}
             >
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{collapsed ? "•" : s.title}</div>
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                {collapsed ? "•" : (
+                  <>
+                    {isFavorite ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" className="shrink-0 text-accent-500 dark:text-accent-400" aria-hidden>
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                      </svg>
+                    ) : null}
+                    {s.title}
+                  </>
+                )}
+              </div>
               {collapsed ? null : (
                 <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                   {s.artist ?? "—"}{" "}

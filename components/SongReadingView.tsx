@@ -4,30 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { transposeChordProText } from "@/lib/transposeChord";
-
-const FAVORITES_KEY = "harmony-favorites";
-
-function getFavorites(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(FAVORITES_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function toggleFavorite(id: string): boolean {
-  const fav = getFavorites();
-  const idx = fav.indexOf(id);
-  const isNow = idx < 0;
-  if (isNow) {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify([...fav, id]));
-  } else {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(fav.filter((x) => x !== id)));
-  }
-  return isNow;
-}
+import { useFavorites } from "@/components/FavoritesProvider";
 
 type Props = {
   chordproText: string;
@@ -50,10 +27,12 @@ export function SongReadingView({
   onExport,
   onDelete,
 }: Props) {
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [transposeSemitones, setTransposeSemitones] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(() => getFavorites().includes(songId));
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const isFav = isFavorite(songId);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -72,9 +51,8 @@ export function SongReadingView({
   );
   const doc = useMemo(() => parseChordPro(displayText), [displayText]);
 
-  function handleToggleFavorite() {
-    const now = toggleFavorite(songId);
-    setIsFavorite(now);
+  async function handleToggleFavorite() {
+    await toggleFavorite(songId);
   }
 
   return (
@@ -135,18 +113,18 @@ export function SongReadingView({
             type="button"
             onClick={handleToggleFavorite}
             className={`rounded-lg p-2 transition-all ${
-              isFavorite
+              isFav
                 ? "bg-accent-500/20 text-accent-600 dark:text-accent-400 hover:bg-accent-500/30"
                 : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
             }`}
-            title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
               viewBox="0 0 24 24"
-              fill={isFavorite ? "currentColor" : "none"}
+              fill={isFav ? "currentColor" : "none"}
               stroke="currentColor"
               strokeWidth="2"
             >
