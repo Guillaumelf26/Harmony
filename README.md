@@ -115,7 +115,7 @@ npm test
 
 ## Structure
 - `app/` : routes Next.js (login, admin, live, api)
-- `components/` : SidebarSongList, Toolbar, EditorPane, SongReadingView, AudioPlayerBar, FullscreenToggle, FavoritesProvider, etc.
+- `components/` : SidebarSongList, EditorPane, SongReadingView, AudioPlayerBar, FullscreenToggle, FavoritesProvider, SessionMenu, etc.
 - `components/live/` : LiveView, LiveToolbar, LiveContent
 - `lib/` : prisma, auth, rbac, validators, services (songs), useClickOutside, transposeChord, chordAtCursor
 - `chordpro/` : parse + render
