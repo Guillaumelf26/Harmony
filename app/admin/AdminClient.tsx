@@ -1186,7 +1186,7 @@ export default function AdminClient() {
                         key={chord}
                         type="button"
                         onClick={() => insertChordAtCursor(chord)}
-                        className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white transition-all"
+                        className="rounded-lg bg-accent-500 hover:bg-accent-600 px-3 py-1.5 text-sm font-medium text-white transition-colors"
                       >
                         {chord}
                       </button>
@@ -1195,7 +1195,7 @@ export default function AdminClient() {
                   <button
                     type="button"
                     onClick={onRemoveChords}
-                    className="rounded-lg bg-gradient-to-r from-accent-500/60 to-accent-600/60 hover:from-accent-600 hover:to-accent-700 px-3 py-1.5 text-sm font-medium text-white shrink-0 transition-all"
+                    className="rounded-lg bg-accent-500 hover:bg-accent-600 px-3 py-1.5 text-sm font-medium text-white shrink-0 transition-colors"
                     title="Supprimer tous les accords [xxx] du chant"
                   >
                     Effacer accords
