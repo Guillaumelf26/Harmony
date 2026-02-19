@@ -101,6 +101,7 @@ export default function AdminClient() {
   const [transposeSemitones, setTransposeSemitones] = useState(0);
   const { isFavorite, toggleFavorite } = useFavorites();
   const [libraries, setLibraries] = useState<{ owned: Array<{ id: string; name: string; _count?: { songs: number } }>; shared: Array<{ id: string; name: string; _count?: { songs: number } }> }>({ owned: [], shared: [] });
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
@@ -201,11 +202,20 @@ export default function AdminClient() {
   }, [editMenuOpen]);
 
   async function refreshLibraries() {
-    const res = await fetch("/api/libraries", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = (await res.json()) as { owned: typeof libraries.owned; shared: typeof libraries.shared };
-    setLibraries(data);
-    setSelectedLibraryId((prev) => (prev && (data.owned.some((l) => l.id === prev) || data.shared.some((l) => l.id === prev)) ? prev : data.owned[0]?.id ?? null));
+    setLoadError(null);
+    try {
+      const res = await fetch("/api/libraries", { cache: "no-store" });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setLoadError(err.error === "FORBIDDEN" ? "Session expirée. Reconnectez-vous." : "Erreur de chargement. Vérifiez la base de données (Railway).");
+        return;
+      }
+      const data = (await res.json()) as { owned: typeof libraries.owned; shared: typeof libraries.shared };
+      setLibraries(data);
+      setSelectedLibraryId((prev) => (prev && (data.owned.some((l) => l.id === prev) || data.shared.some((l) => l.id === prev)) ? prev : data.owned[0]?.id ?? null));
+    } catch {
+      setLoadError("Erreur réseau. Vérifiez votre connexion et la base de données.");
+    }
   }
 
   async function refreshList() {
@@ -902,7 +912,21 @@ export default function AdminClient() {
           {/* Zone principale : lecture ou édition */}
           <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
             <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
-              {!selectedId && !loadingSongId && !editMode ? (
+              {loadError ? (
+                <div className="flex flex-col items-center justify-center min-h-full text-center px-4 gap-4">
+                  <p className="text-lg text-red-600 dark:text-red-400">{loadError}</p>
+                  <button
+                    type="button"
+                    onClick={() => void refreshLibraries()}
+                    className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
+                  >
+                    Réessayer
+                  </button>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md">
+                    Sur Railway : vérifiez que DATABASE_URL et NEXTAUTH_SECRET sont définis. Les logs montrent les erreurs Prisma.
+                  </p>
+                </div>
+              ) : !selectedId && !loadingSongId && !editMode ? (
                 <div className="flex flex-col items-center justify-center min-h-full text-center px-4">
                   <p className="text-lg text-zinc-600 dark:text-zinc-400">
                     Bonjour {session?.user?.name ?? session?.user?.email?.split("@")[0] ?? "Utilisateur"}, veuillez sélectionner un chant pour commencer.
@@ -1277,7 +1301,7 @@ export default function AdminClient() {
         )}
 
       {joinModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setJoinModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setJoinModalOpen(false)}>
           <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Rejoindre une bibliothèque</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Entrez le code d&apos;invitation fourni par le propriétaire.</p>
@@ -1326,7 +1350,7 @@ export default function AdminClient() {
       )}
 
       {createModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCreateModalOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setCreateModalOpen(false)}>
           <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Créer une bibliothèque</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Donnez un nom à votre nouvelle bibliothèque.</p>
