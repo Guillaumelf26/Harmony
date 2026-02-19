@@ -1,0 +1,466 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+type LibraryItem = {
+  id: string;
+  name: string;
+  isOwner?: boolean;
+  _count?: { songs: number };
+  owner?: { email: string };
+};
+
+type Member = {
+  userId: string;
+  email: string;
+  role: string;
+  joinedAt: string;
+};
+
+export default function LibrariesClient() {
+  const [libraries, setLibraries] = useState<{ owned: LibraryItem[]; shared: LibraryItem[] }>({ owned: [], shared: [] });
+  const [loading, setLoading] = useState(true);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createLibraryName, setCreateLibraryName] = useState("");
+
+  async function refreshLibraries() {
+    const res = await fetch("/api/libraries", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { owned: LibraryItem[]; shared: LibraryItem[] };
+    setLibraries(data);
+  }
+
+  useEffect(() => {
+    refreshLibraries().finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur">
+        <div className="flex max-w-2xl mx-auto items-center justify-between gap-3 px-4 py-3">
+          <Link
+            href="/admin"
+            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+          >
+            ← Retour
+          </Link>
+          <h1 className="text-lg font-semibold">Gérer les bibliothèques</h1>
+          <div className="w-16" />
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {loading ? (
+          <div className="text-sm text-zinc-500">Chargement…</div>
+        ) : (
+          <div className="space-y-8">
+            {/* Mes bibliothèques */}
+            <section>
+              <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">Mes bibliothèques</h2>
+              {libraries.owned.length === 0 ? (
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  Aucune bibliothèque. Créez-en une ci-dessous.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {libraries.owned.map((lib) => (
+                    <LibraryCard
+                      key={lib.id}
+                      library={lib}
+                      isOwner
+                      onUpdated={refreshLibraries}
+                      onDeleted={refreshLibraries}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Partagées */}
+            <section>
+              <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">Partagées avec moi</h2>
+              {libraries.shared.length === 0 ? (
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                  Aucune bibliothèque partagée.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {libraries.shared.map((lib) => (
+                    <LibraryCard key={lib.id} library={lib} isOwner={false} onUpdated={refreshLibraries} onLeft={refreshLibraries} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Actions */}
+            <section className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setJoinModalOpen(true)}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <line x1="19" y1="8" x2="19" y2="14" />
+                  <line x1="22" y1="11" x2="16" y2="11" />
+                </svg>
+                Rejoindre une bibliothèque
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateModalOpen(true)}
+                className="rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-600 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+                Créer une bibliothèque
+              </button>
+            </section>
+          </div>
+        )}
+      </div>
+
+      {/* Modal Rejoindre */}
+      {joinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setJoinModalOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Rejoindre une bibliothèque</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Entrez le code d&apos;invitation fourni par le propriétaire.</p>
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="ABC-1234"
+              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setJoinModalOpen(false); setJoinCode(""); }}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const code = joinCode.trim().replace(/\s/g, "");
+                  if (!code) return;
+                  const res = await fetch("/api/libraries/join", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ code }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    window.alert((data as { message?: string }).message ?? "Code invalide ou expiré.");
+                    return;
+                  }
+                  setJoinModalOpen(false);
+                  setJoinCode("");
+                  await refreshLibraries();
+                }}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
+              >
+                Rejoindre
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Créer */}
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCreateModalOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Créer une bibliothèque</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Donnez un nom à votre nouvelle bibliothèque.</p>
+            <input
+              type="text"
+              value={createLibraryName}
+              onChange={(e) => setCreateLibraryName(e.target.value)}
+              placeholder="Ex: Groupe XYZ"
+              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setCreateModalOpen(false); setCreateLibraryName(""); }}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const name = createLibraryName.trim();
+                  if (!name) return;
+                  const res = await fetch("/api/libraries", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ name }),
+                  });
+                  if (!res.ok) return;
+                  setCreateModalOpen(false);
+                  setCreateLibraryName("");
+                  await refreshLibraries();
+                }}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LibraryCard({
+  library,
+  isOwner,
+  onUpdated,
+  onDeleted,
+  onLeft,
+}: {
+  library: LibraryItem;
+  isOwner: boolean;
+  onUpdated: () => void;
+  onDeleted?: () => void;
+  onLeft?: () => void;
+}) {
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(library.name);
+  const [savingName, setSavingName] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName(library.name);
+  }, [library.name]);
+
+  useEffect(() => {
+    if (membersOpen && isOwner) {
+      fetch(`/api/libraries/${library.id}/members`)
+        .then((r) => (r.ok ? r.json() : { members: [] }))
+        .then((d: { members: Member[] }) => setMembers(d.members ?? []));
+    }
+  }, [library.id, membersOpen, isOwner]);
+
+  async function saveName() {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === library.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      const res = await fetch(`/api/libraries/${library.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (res.ok) {
+        const updated = (await res.json()) as { name: string };
+        setName(updated.name);
+        setEditingName(false);
+        onUpdated();
+      }
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function generateCode() {
+    setGenerating(true);
+    setInviteCode(null);
+    try {
+      const res = await fetch(`/api/libraries/${library.id}/invite`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { code: string };
+      setInviteCode(data.code);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function revokeAccess(userId: string) {
+    if (!window.confirm("Révoquer l'accès de cette personne ?")) return;
+    setRevoking(userId);
+    try {
+      const res = await fetch(`/api/libraries/${library.id}/members/${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        setMembers((prev) => prev.filter((m) => m.userId !== userId));
+        onUpdated();
+      }
+    } finally {
+      setRevoking(null);
+    }
+  }
+
+  async function deleteLibrary() {
+    if (!window.confirm(`Supprimer définitivement la bibliothèque « ${library.name} » ? Tous les chants seront perdus.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/libraries/${library.id}`, { method: "DELETE" });
+      if (res.ok) onDeleted?.();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function leaveLibrary() {
+    if (!window.confirm(`Quitter la bibliothèque « ${library.name} » ?`)) return;
+    setLeaving(true);
+    try {
+      const res = await fetch(`/api/libraries/${library.id}/leave`, { method: "POST" });
+      if (res.ok) onLeft?.();
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-4">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        {editingName ? (
+          <div className="flex-1 flex gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveName()}
+              className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+              autoFocus
+            />
+            <button type="button" onClick={saveName} disabled={savingName} className="rounded px-2 py-1 text-sm text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 disabled:opacity-50">
+              {savingName ? "…" : "OK"}
+            </button>
+            <button type="button" onClick={() => { setEditingName(false); setName(library.name); }} className="rounded px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-zinc-900 dark:text-zinc-100 truncate">{library.name}</h3>
+              {!isOwner && library.owner?.email && (
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Partagée par {library.owner.email}</p>
+              )}
+            </div>
+            {library._count?.songs != null && (
+              <span className="text-xs text-zinc-500 shrink-0">{library._count.songs} chant{library._count.songs > 1 ? "s" : ""}</span>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mt-2">
+        {isOwner && !editingName && (
+          <>
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+            >
+              Renommer
+            </button>
+            <button
+              type="button"
+              onClick={() => setMembersOpen((o) => !o)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+            >
+              Partager
+            </button>
+          </>
+        )}
+        {!isOwner && (
+          <button
+            type="button"
+            onClick={leaveLibrary}
+            disabled={leaving}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+          >
+            {leaving ? "…" : "Quitter"}
+          </button>
+        )}
+        {isOwner && (
+          <button
+            type="button"
+            onClick={deleteLibrary}
+            disabled={deleting}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+          >
+            {deleting ? "…" : "Supprimer"}
+          </button>
+        )}
+      </div>
+
+      {/* Section Partager (invite code + membres) */}
+      {isOwner && membersOpen && (
+        <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 space-y-3">
+          <div>
+            <button
+              type="button"
+              onClick={generateCode}
+              disabled={generating}
+              className="rounded-lg bg-accent-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-600 disabled:opacity-60"
+            >
+              {generating ? "Génération…" : "Générer un code d'invitation"}
+            </button>
+            {inviteCode && (
+              <div className="mt-2 flex items-center gap-2">
+                <code className="flex-1 rounded bg-zinc-200 dark:bg-zinc-800 px-2 py-1.5 text-xs font-mono">{inviteCode}</code>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(inviteCode); window.alert("Code copié."); }}
+                  className="rounded px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  Copier
+                </button>
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Personnes avec accès</h4>
+            {members.length === 0 ? (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Aucune (sauf vous).</p>
+            ) : (
+              <ul className="space-y-1">
+                {members.map((m) => (
+                  <li key={m.userId} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-zinc-700 dark:text-zinc-300">{m.email}</span>
+                    <button
+                      type="button"
+                      onClick={() => revokeAccess(m.userId)}
+                      disabled={revoking === m.userId}
+                      className="shrink-0 text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                    >
+                      {revoking === m.userId ? "…" : "Révoquer"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

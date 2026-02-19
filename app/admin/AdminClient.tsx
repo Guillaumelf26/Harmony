@@ -20,8 +20,6 @@ import { tagsFromUnknown } from "@/lib/validators";
 import { useClickOutside } from "@/lib/useClickOutside";
 import { exportChordPro, exportTxt, exportPdf, type ExportFormat } from "@/lib/export";
 import { LibrarySelector } from "@/components/LibrarySelector";
-import { ManageAccessModal } from "@/components/ManageAccessModal";
-
 type SongListItem = {
   id: string;
   title: string;
@@ -85,7 +83,6 @@ export default function AdminClient() {
   const [joinCode, setJoinCode] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createLibraryName, setCreateLibraryName] = useState("");
-  const [manageAccessLibraryId, setManageAccessLibraryId] = useState<string | null>(null);
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const songCacheRef = useRef<Map<string, Song>>(new Map());
 
@@ -638,7 +635,6 @@ export default function AdminClient() {
               onSelect={setSelectedLibraryId}
               onJoinLibrary={() => setJoinModalOpen(true)}
               onCreateLibrary={() => setCreateModalOpen(true)}
-              onManageAccess={(id) => setManageAccessLibraryId(id)}
             />
           </div>
           <SidebarSongList
@@ -1274,25 +1270,6 @@ export default function AdminClient() {
         </div>
       )}
 
-      {manageAccessLibraryId && (
-        <ManageAccessModal
-          libraryId={manageAccessLibraryId}
-          libraryName={libraries.owned.find((l) => l.id === manageAccessLibraryId)?.name ?? "Bibliothèque"}
-          isOwner
-          onClose={() => setManageAccessLibraryId(null)}
-          onMembersChanged={refreshLibraries}
-          onDeleted={(deletedId) => {
-            setManageAccessLibraryId(null);
-            if (selectedLibraryId === deletedId) {
-              setSelectedId(null);
-              setSelectedSong(null);
-              setEditMode(false);
-              setDirty(false);
-            }
-            void refreshLibraries();
-          }}
-        />
-      )}
     </div>
   );
 }
