@@ -17,3 +17,17 @@ export type SongForRead = {
 export async function getSongById(id: string) {
   return prisma.song.findUnique({ where: { id } });
 }
+
+/**
+ * Récupère un chant avec sa bibliothèque (pour vérification d'accès en une seule requête).
+ */
+export async function getSongWithLibrary(id: string) {
+  return prisma.song.findUnique({
+    where: { id },
+    include: {
+      library: {
+        include: { members: true },
+      },
+    },
+  });
+}

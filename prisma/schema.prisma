@@ -10,20 +10,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  USER
-}
-
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  preferences  Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  favorites    UserFavorite[]
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  preferences   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  favorites     UserFavorite[]
+  ownedLibraries   Library[]         @relation("LibraryOwner")
+  libraryMemberships LibraryMember[]
 }
 
 model UserFavorite {
@@ -38,8 +34,59 @@ model UserFavorite {
   @@index([userId])
 }
 
+model Library {
+  id          String   @id @default(cuid())
+  name        String
+  ownerId     String
+  isPublic    Boolean  @default(false)
+  publicSlug  String?  @unique // ex: "abc123" pour /library/abc123 (lecture publique sans compte)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User     @relation("LibraryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  songs       Song[]
+  members     LibraryMember[]
+  inviteCodes LibraryInviteCode[]
+
+  @@index([ownerId])
+  @@index([publicSlug])
+}
+
+enum LibraryRole {
+  EDITOR
+}
+
+model LibraryMember {
+  id        String     @id @default(cuid())
+  libraryId String
+  userId    String
+  role      LibraryRole @default(EDITOR)
+  createdAt DateTime   @default(now())
+  library   Library    @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([libraryId, userId])
+  @@index([libraryId])
+  @@index([userId])
+}
+
+model LibraryInviteCode {
+  id        String     @id @default(cuid())
+  libraryId String
+  code      String     @unique // ex: "ABC-1234"
+  role      LibraryRole @default(EDITOR)
+  expiresAt DateTime?
+  maxUses   Int?       // null = illimité
+  useCount  Int        @default(0)
+  createdAt DateTime   @default(now())
+  library   Library    @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryId])
+  @@index([code])
+}
+
 model Song {
   id            String   @id @default(cuid())
+  libraryId     String
   title         String
   artist        String?
   favoritedBy   UserFavorite[]
@@ -52,7 +99,9 @@ model Song {
   referenceUrl  String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  library       Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
 
+  @@index([libraryId])
   @@index([title])
   @@index([artist])
 }

@@ -14,6 +14,9 @@ const ADMIN_HEADERS = {
 
 describe("API songs (integration minimal)", () => {
   it("CRUD create/get/update/delete", async () => {
+    const lib = await prisma.library.findFirst({ select: { id: true } });
+    if (!lib) throw new Error("No library in test DB - run seed first");
+
     // Create
     const title = `Test Song ${Date.now()}`;
     const createRes = await createSong(
@@ -21,6 +24,7 @@ describe("API songs (integration minimal)", () => {
         method: "POST",
         headers: ADMIN_HEADERS,
         body: JSON.stringify({
+          libraryId: lib.id,
           title,
           artist: "Tester",
           tags: ["test", "mvp"],
@@ -59,7 +63,7 @@ describe("API songs (integration minimal)", () => {
       expect(updated.title).toBe(title + " Updated");
 
       // List includes
-      const listRes = await listSongs(new Request("http://test.local/api/songs?query=Updated", { headers: ADMIN_HEADERS }));
+      const listRes = await listSongs(new Request(`http://test.local/api/songs?libraryId=${lib.id}&query=Updated`, { headers: ADMIN_HEADERS }));
       expect(listRes.status).toBe(200);
       const listed = (await listRes.json()) as { items: Array<{ id: string }> };
       expect(listed.items.some((s) => s.id === id)).toBe(true);

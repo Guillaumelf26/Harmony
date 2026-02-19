@@ -40,8 +40,7 @@ export async function middleware(req: NextRequest) {
     // Import dynamique : évite le blocage au démarrage sur Windows (next-auth/jwt)
     const { getToken } = await import("next-auth/jwt");
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    const role = (token as { role?: string } | null)?.role;
-    if (!token || role !== "ADMIN") {
+    if (!token) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);

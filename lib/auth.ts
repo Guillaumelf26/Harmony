@@ -1,4 +1,3 @@
-import type { Role } from "@prisma/client";
 import bcrypt from "bcrypt";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth/next";
@@ -31,28 +30,21 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email },
-          select: { id: true, email: true, passwordHash: true, role: true },
+          select: { id: true, email: true, passwordHash: true },
         });
         if (!user) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        return { id: user.id, email: user.email, role: user.role };
+        return { id: user.id, email: user.email };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as { role: Role }).role;
-      }
-      return token;
-    },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? session.user.id;
-        session.user.role = (token.role as Role | undefined) ?? session.user.role;
       }
       return session;
     },

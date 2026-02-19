@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";
 import { getServerAuthSession } from "@/lib/auth";
-import { isAdminSession } from "@/lib/rbac";
+import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { canUserAccessLibrary } from "@/lib/services/libraries";
 
 type Params = { params: { id: string } };
 
@@ -20,10 +21,13 @@ const ALLOWED_TYPES = [
 
 export async function POST(req: Request, { params }: Params) {
   const session = await getServerAuthSession();
-  if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isAuthenticatedSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const song = await prisma.song.findUnique({ where: { id: params.id } });
   if (!song) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  const canEdit = await canUserAccessLibrary(song.libraryId, session.user?.id ?? null, { requireEdit: true });
+  if (!canEdit) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
@@ -72,10 +76,13 @@ export async function POST(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   const session = await getServerAuthSession();
-  if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isAuthenticatedSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const song = await prisma.song.findUnique({ where: { id: params.id } });
   if (!song?.audioUrl) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  const canEdit = await canUserAccessLibrary(song.libraryId, session.user?.id ?? null, { requireEdit: true });
+  if (!canEdit) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   try {
     await del(song.audioUrl);

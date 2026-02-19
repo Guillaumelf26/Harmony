@@ -1,5 +1,5 @@
 require("dotenv").config({ path: ".env" });
-const { PrismaClient, Role } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
@@ -23,14 +23,27 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email },
-    update: { passwordHash, role: Role.ADMIN },
-    create: { email, passwordHash, role: Role.ADMIN },
+    update: { passwordHash },
+    create: { email, passwordHash },
   });
 
+  // S'assurer qu'une bibliothèque par défaut existe pour cet utilisateur
+  const existingLibrary = await prisma.library.findFirst({
+    where: { ownerId: user.id },
+  });
+  if (!existingLibrary) {
+    await prisma.library.create({
+      data: {
+        name: "Mes chants",
+        ownerId: user.id,
+      },
+    });
+  }
+
   // eslint-disable-next-line no-console
-  console.log(`Seeded admin user: ${email}`);
+  console.log(`Seeded user: ${email}`);
 }
 
 main()
@@ -43,4 +56,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-

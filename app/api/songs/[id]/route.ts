@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
-import { isAdminSession } from "@/lib/rbac";
+import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { getSongById } from "@/lib/services/songs";
+import { getSongWithLibrary } from "@/lib/services/songs";
 import { normalizeTags, songPatchSchema } from "@/lib/validators";
 
 type Params = { params: { id: string } };
@@ -14,22 +14,49 @@ function isTestAdmin(req: Request) {
   );
 }
 
+function canAccessLibrary(
+  library: { ownerId: string; isPublic: boolean; members: { userId: string; role: string }[] },
+  userId: string | null,
+  requireEdit?: boolean
+): boolean {
+  if (library.ownerId === userId) return true;
+  if (userId) {
+    const member = library.members.find((m) => m.userId === userId);
+    if (member) return !requireEdit || member.role === "EDITOR";
+  }
+  return library.isPublic && !requireEdit;
+}
+
 export async function GET(_req: Request, { params }: Params) {
-  if (!isTestAdmin(_req)) {
-    const session = await getServerAuthSession();
-    if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const session = await getServerAuthSession();
+  if (!isTestAdmin(_req) && !isAuthenticatedSession(session)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const song = await getSongById(params.id);
-  if (!song) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  const songWithLib = await getSongWithLibrary(params.id);
+  if (!songWithLib) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
+  const userId = session?.user?.id ?? null;
+  if (!canAccessLibrary(songWithLib.library, userId)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
+  const { library, ...song } = songWithLib;
   return NextResponse.json(song);
 }
 
 export async function PUT(req: Request, { params }: Params) {
-  if (!isTestAdmin(req)) {
-    const session = await getServerAuthSession();
-    if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const session = await getServerAuthSession();
+  if (!isTestAdmin(req) && !isAuthenticatedSession(session)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
+  const songWithLib = await getSongWithLibrary(params.id);
+  if (!songWithLib) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  const userId = session?.user?.id ?? null;
+  if (!canAccessLibrary(songWithLib.library, userId, true)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
   const json = await req.json().catch(() => null);
@@ -62,9 +89,17 @@ export async function PUT(req: Request, { params }: Params) {
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
-  if (!isTestAdmin(_req)) {
-    const session = await getServerAuthSession();
-    if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const session = await getServerAuthSession();
+  if (!isTestAdmin(_req) && !isAuthenticatedSession(session)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
+  const songWithLib = await getSongWithLibrary(params.id);
+  if (!songWithLib) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  const userId = session?.user?.id ?? null;
+  if (!canAccessLibrary(songWithLib.library, userId, true)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
   try {

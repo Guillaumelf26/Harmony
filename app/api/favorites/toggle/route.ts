@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
-import { isAdminSession } from "@/lib/rbac";
+import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ const bodySchema = z.object({ songId: z.string().min(1) });
 
 export async function POST(req: Request) {
   const session = await getServerAuthSession();
-  if (!session || !isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isAuthenticatedSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const userId = session.user?.id;
   if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });

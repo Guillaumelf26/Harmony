@@ -18,6 +18,9 @@ import { appendChordExtension } from "@/lib/chordAtCursor";
 import type { ChordAtCursorInfo } from "@/components/EditorPane";
 import { tagsFromUnknown } from "@/lib/validators";
 import { useClickOutside } from "@/lib/useClickOutside";
+import { exportChordPro, exportTxt, exportPdf, type ExportFormat } from "@/lib/export";
+import { LibrarySelector } from "@/components/LibrarySelector";
+import { ManageAccessModal } from "@/components/ManageAccessModal";
 
 type SongListItem = {
   id: string;
@@ -76,6 +79,15 @@ export default function AdminClient() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const editMenuRef = useRef<HTMLDivElement>(null);
+  const [libraries, setLibraries] = useState<{ owned: Array<{ id: string; name: string; _count?: { songs: number } }>; shared: Array<{ id: string; name: string; _count?: { songs: number } }> }>({ owned: [], shared: [] });
+  const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createLibraryName, setCreateLibraryName] = useState("");
+  const [manageAccessLibraryId, setManageAccessLibraryId] = useState<string | null>(null);
+  const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
+  const songCacheRef = useRef<Map<string, Song>>(new Map());
 
   const [metaTitle, setMetaTitle] = useState("");
   const [metaArtist, setMetaArtist] = useState("");
@@ -153,8 +165,21 @@ export default function AdminClient() {
 
   useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen);
 
+  async function refreshLibraries() {
+    const res = await fetch("/api/libraries", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { owned: typeof libraries.owned; shared: typeof libraries.shared };
+    setLibraries(data);
+    setSelectedLibraryId((prev) => (prev && (data.owned.some((l) => l.id === prev) || data.shared.some((l) => l.id === prev)) ? prev : data.owned[0]?.id ?? null));
+  }
+
   async function refreshList() {
+    if (!selectedLibraryId) {
+      setSongs([]);
+      return;
+    }
     const params = new URLSearchParams();
+    params.set("libraryId", selectedLibraryId);
     if (query) params.set("query", query);
     params.set("sortBy", sortBy);
     params.set("sortOrder", sortOrder);
@@ -167,32 +192,71 @@ export default function AdminClient() {
   async function loadSong(id: string) {
     editAudioRef.current?.pause();
     editAudioRef.current = null;
-    const res = await fetch(`/api/songs/${id}`, { cache: "no-store" });
-    if (!res.ok) return;
-    const song = (await res.json()) as Song;
+
+    const cached = songCacheRef.current.get(id);
+    if (cached) {
+      setSelectedId(id);
+      setSelectedSong(cached);
+      setEditorText(cached.chordproText ?? "");
+      setEditMode(false);
+      setMetaTitle(cached.title ?? "");
+      setMetaArtist(cached.artist ?? "");
+      setMetaKey(cached.key ?? "");
+      setMetaTags(tagsFromUnknown(cached.tags).join(", "));
+      setMetaReferenceUrl(cached.referenceUrl ?? "");
+      setActiveChordInfo(null);
+      setDirty(false);
+      setLoadingSongId(null);
+      return;
+    }
+
+    setLoadingSongId(id);
     setSelectedId(id);
-    setSelectedSong(song);
-    setEditorText(song.chordproText ?? "");
-    setEditMode(false);
-    setMetaTitle(song.title ?? "");
-    setMetaArtist(song.artist ?? "");
-    setMetaKey(song.key ?? "");
-    setMetaTags(tagsFromUnknown(song.tags).join(", "));
-    setMetaReferenceUrl(song.referenceUrl ?? "");
-    setActiveChordInfo(null);
-    setDirty(false);
+    try {
+      const res = await fetch(`/api/songs/${id}`, { cache: "no-store" });
+      if (!res.ok) {
+        setSelectedId((prev) => (prev === id ? null : prev));
+        return;
+      }
+      const song = (await res.json()) as Song;
+      songCacheRef.current.set(id, song);
+      if (songCacheRef.current.size > 10) {
+        const firstKey = songCacheRef.current.keys().next().value;
+        if (firstKey) songCacheRef.current.delete(firstKey);
+      }
+      setSelectedId(id);
+      setSelectedSong(song);
+      setEditorText(song.chordproText ?? "");
+      setEditMode(false);
+      setMetaTitle(song.title ?? "");
+      setMetaArtist(song.artist ?? "");
+      setMetaKey(song.key ?? "");
+      setMetaTags(tagsFromUnknown(song.tags).join(", "));
+      setMetaReferenceUrl(song.referenceUrl ?? "");
+      setActiveChordInfo(null);
+      setDirty(false);
+    } catch {
+      setSelectedId((prev) => (prev === id ? null : prev));
+    } finally {
+      setLoadingSongId(null);
+    }
   }
+
+  useEffect(() => {
+    void refreshLibraries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     void refreshList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedLibraryId]);
 
   useEffect(() => {
     const t = window.setTimeout(() => void refreshList(), 250);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, sortBy, sortOrder]);
+  }, [query, sortBy, sortOrder, selectedLibraryId]);
 
   const songFromUrl = searchParams.get("song");
   useEffect(() => {
@@ -207,7 +271,30 @@ export default function AdminClient() {
   }, [songFromUrl, songs.length]);
 
 
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function prefetchSong(id: string) {
+    if (songCacheRef.current.has(id)) return;
+    prefetchTimerRef.current = setTimeout(() => {
+      prefetchTimerRef.current = null;
+      fetch(`/api/songs/${id}`, { cache: "no-store" })
+        .then((res) => res.ok ? res.json() : null)
+        .then((song: Song | null) => {
+          if (song) songCacheRef.current.set(song.id, song);
+        })
+        .catch(() => {});
+    }, 150);
+  }
+
+  function cancelPrefetch() {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current);
+      prefetchTimerRef.current = null;
+    }
+  }
+
   async function onSelect(id: string) {
+    cancelPrefetch();
     if (dirty && selectedId !== id) {
       const ok = window.confirm("Changements non sauvegardés. Continuer sans sauvegarder ?");
       if (!ok) return;
@@ -239,6 +326,16 @@ export default function AdminClient() {
   }
 
   async function onNew() {
+    if (!selectedLibraryId) {
+      window.alert("Sélectionnez une bibliothèque pour créer un chant.");
+      return;
+    }
+    const canEdit = libraries.owned.some((l) => l.id === selectedLibraryId) ||
+      libraries.shared.some((l) => l.id === selectedLibraryId);
+    if (!canEdit) {
+      window.alert("Vous n'avez pas les droits d'édition sur cette bibliothèque.");
+      return;
+    }
     if (dirty) {
       const ok = window.confirm("Changements non sauvegardés. Créer un nouveau chant quand même ?");
       if (!ok) return;
@@ -283,6 +380,7 @@ export default function AdminClient() {
         });
         if (!res.ok) throw new Error("save_failed");
         const updated = (await res.json()) as Song;
+        songCacheRef.current.set(selectedId, updated);
         setSelectedSong(updated);
         setMetaTitle(updated.title ?? title);
         setMetaArtist(updated.artist ?? artist ?? "");
@@ -295,10 +393,15 @@ export default function AdminClient() {
       }
 
       // create
+      if (!selectedLibraryId) {
+        window.alert("Sélectionnez une bibliothèque pour créer un chant.");
+        return;
+      }
       const res = await fetch(`/api/songs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          libraryId: selectedLibraryId,
           title,
           artist,
           key,
@@ -309,6 +412,7 @@ export default function AdminClient() {
       });
       if (!res.ok) throw new Error("create_failed");
       const created = (await res.json()) as Song;
+      songCacheRef.current.set(created.id, created);
       setSelectedId(created.id);
       setSelectedSong(created);
       setMetaTitle(created.title ?? title);
@@ -340,6 +444,7 @@ export default function AdminClient() {
 
     const res = await fetch(`/api/songs/${selectedId}`, { method: "DELETE" });
     if (!res.ok) return;
+    songCacheRef.current.delete(selectedId);
     setSelectedId(null);
     setSelectedSong(null);
     setEditorText("");
@@ -353,16 +458,12 @@ export default function AdminClient() {
     await refreshList();
   }
 
-  function onExport() {
+  function onExport(format: ExportFormat) {
     const text = editorText;
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const safeTitle = (metaTitle || selectedSong?.title || "song").replace(/[^\w\-]+/g, "_");
-    a.href = url;
-    a.download = `${safeTitle}.chordpro.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const title = metaTitle || selectedSong?.title || "song";
+    if (format === "chordpro") exportChordPro(text, title);
+    else if (format === "txt") exportTxt(text, title);
+    else if (format === "pdf") exportPdf(text, title);
   }
 
   function insertChordAtCursor(chord: string) {
@@ -454,10 +555,15 @@ export default function AdminClient() {
         const title = parsed.title?.trim() || file.name.replace(/\.(txt|chordpro|pro)$/i, "") || "Sans titre";
         const artist = parsed.artist?.trim() ?? null;
         const key = parsed.key?.trim() ?? null;
+        if (!selectedLibraryId) {
+          window.alert("Sélectionnez une bibliothèque pour importer.");
+          return;
+        }
         const res = await fetch("/api/songs", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
+            libraryId: selectedLibraryId,
             title,
             artist,
             key,
@@ -525,6 +631,16 @@ export default function AdminClient() {
           className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 overflow-hidden backdrop-blur-sm"
           aria-label="Liste des chants"
         >
+          <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
+            <LibrarySelector
+              libraries={libraries}
+              selectedId={selectedLibraryId}
+              onSelect={setSelectedLibraryId}
+              onJoinLibrary={() => setJoinModalOpen(true)}
+              onCreateLibrary={() => setCreateModalOpen(true)}
+              onManageAccess={(id) => setManageAccessLibraryId(id)}
+            />
+          </div>
           <SidebarSongList
             collapsed={false}
             overlay={false}
@@ -543,6 +659,8 @@ export default function AdminClient() {
             songs={songs}
             selectedId={selectedId}
             onSelect={onSelect}
+            onSongHover={prefetchSong}
+            onSongHoverCancel={cancelPrefetch}
             onNew={onNew}
           />
         </aside>
@@ -593,11 +711,23 @@ export default function AdminClient() {
           {/* Zone principale : lecture ou édition */}
           <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
             <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
-              {!selectedId ? (
+              {!selectedId && !loadingSongId && !editMode ? (
                 <div className="flex flex-col items-center justify-center min-h-full text-center px-4">
                   <p className="text-lg text-zinc-600 dark:text-zinc-400">
                     Bonjour {session?.user?.name ?? session?.user?.email?.split("@")[0] ?? "Utilisateur"}, veuillez sélectionner un chant pour commencer.
                   </p>
+                </div>
+              ) : loadingSongId ? (
+                <div className="flex-1 min-h-0 overflow-auto px-4 py-6">
+                  <div className="mx-auto max-w-2xl animate-pulse space-y-4">
+                    <div className="h-8 w-48 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="space-y-2 pt-4">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="h-4 rounded bg-zinc-200 dark:bg-zinc-800" style={{ width: `${60 + (i % 3) * 15}%` }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : selectedId && !editMode ? (
                 <SongReadingView
@@ -646,10 +776,13 @@ export default function AdminClient() {
                         </svg>
                         Import
                       </button>
+                      <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                        Export
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
-                          onExport();
+                          onExport("chordpro");
                           setEditMenuOpen(false);
                         }}
                         className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
@@ -659,7 +792,41 @@ export default function AdminClient() {
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
-                        Export
+                        ChordPro
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onExport("txt");
+                          setEditMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                          <line x1="10" y1="9" x2="8" y2="9" />
+                        </svg>
+                        TXT (paroles)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onExport("pdf");
+                          setEditMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                          <line x1="10" y1="9" x2="8" y2="9" />
+                        </svg>
+                        PDF
                       </button>
                       <button
                         type="button"
@@ -1011,6 +1178,110 @@ export default function AdminClient() {
           </div>,
           document.body
         )}
+
+      {joinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setJoinModalOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Rejoindre une bibliothèque</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Entrez le code d&apos;invitation fourni par le propriétaire.</p>
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="ABC-1234"
+              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setJoinModalOpen(false); setJoinCode(""); }}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const code = joinCode.trim().replace(/\s/g, "");
+                  if (!code) return;
+                  const res = await fetch("/api/libraries/join", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ code }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    window.alert((data as { message?: string }).message ?? "Code invalide ou expiré.");
+                    return;
+                  }
+                  setJoinModalOpen(false);
+                  setJoinCode("");
+                  await refreshLibraries();
+                  setSelectedLibraryId((data as { libraryId: string }).libraryId);
+                }}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
+              >
+                Rejoindre
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCreateModalOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Créer une bibliothèque</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Donnez un nom à votre nouvelle bibliothèque.</p>
+            <input
+              type="text"
+              value={createLibraryName}
+              onChange={(e) => setCreateLibraryName(e.target.value)}
+              placeholder="Ex: Groupe XYZ"
+              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-accent-500 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setCreateModalOpen(false); setCreateLibraryName(""); }}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const name = createLibraryName.trim();
+                  if (!name) return;
+                  const res = await fetch("/api/libraries", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ name }),
+                  });
+                  if (!res.ok) return;
+                  const created = (await res.json()) as { id: string };
+                  setCreateModalOpen(false);
+                  setCreateLibraryName("");
+                  await refreshLibraries();
+                  setSelectedLibraryId(created.id);
+                }}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {manageAccessLibraryId && (
+        <ManageAccessModal
+          libraryId={manageAccessLibraryId}
+          libraryName={libraries.owned.find((l) => l.id === manageAccessLibraryId)?.name ?? "Bibliothèque"}
+          onClose={() => setManageAccessLibraryId(null)}
+          onMembersChanged={refreshLibraries}
+        />
+      )}
     </div>
   );
 }

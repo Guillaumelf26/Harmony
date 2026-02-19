@@ -7,6 +7,7 @@ export function tagsFromUnknown(value: unknown): string[] {
 }
 
 export const songUpsertSchema = z.object({
+  libraryId: z.string().min(1).optional(), // requis pour POST, optionnel pour import
   title: z.string().min(1).max(200),
   artist: z.string().min(1).max(200).optional().nullable(),
   key: z.string().min(1).max(20).optional().nullable(),

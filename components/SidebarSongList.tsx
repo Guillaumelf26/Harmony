@@ -25,6 +25,8 @@ type Props = {
   songs: SongListItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onSongHover?: (id: string) => void;
+  onSongHoverCancel?: () => void;
   onNew?: () => void;
   /** Mode overlay : bouton fermer (×) au lieu de « */
   overlay?: boolean;
@@ -45,6 +47,8 @@ export function SidebarSongList({
   songs,
   selectedId,
   onSelect,
+  onSongHover,
+  onSongHoverCancel,
   onNew,
   overlay = false,
   hideCollapseButton = false,
@@ -220,6 +224,8 @@ export function SidebarSongList({
             <button
               key={s.id}
               onClick={() => onSelect(s.id)}
+              onMouseEnter={() => onSongHover?.(s.id)}
+              onMouseLeave={() => onSongHoverCancel?.()}
               className={[
                 "w-full rounded-lg py-2.5 text-left transition-colors",
                 active

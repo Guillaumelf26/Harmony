@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
-import { isAdminSession } from "@/lib/rbac";
+import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ export type UserPreferences = z.infer<typeof preferencesSchema>;
 
 export async function GET() {
   const session = await getServerAuthSession();
-  if (!session || !isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isAuthenticatedSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const userId = session.user?.id;
   if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const session = await getServerAuthSession();
-  if (!session || !isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!isAuthenticatedSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const userId = session.user?.id;
   if (!userId) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });

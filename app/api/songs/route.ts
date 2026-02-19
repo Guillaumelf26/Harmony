@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { getServerAuthSession } from "@/lib/auth";
-import { isAdminSession } from "@/lib/rbac";
+import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { canUserAccessLibrary } from "@/lib/services/libraries";
 import { normalizeTags, songUpsertSchema, tagsFromUnknown } from "@/lib/validators";
 
 function getTags(value: unknown): string[] {
@@ -17,12 +18,27 @@ function isTestAdmin(req: Request) {
 }
 
 export async function GET(req: Request) {
-  if (!isTestAdmin(req)) {
-    const session = await getServerAuthSession();
-    if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const session = await getServerAuthSession();
+  if (!isTestAdmin(req) && !isAuthenticatedSession(session)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);
+  let libraryId = searchParams.get("libraryId")?.trim();
+  if (!libraryId && isTestAdmin(req)) {
+    const first = await prisma.library.findFirst({ select: { id: true } });
+    libraryId = first?.id ?? undefined;
+  }
+  if (!libraryId) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "libraryId requis" }, { status: 400 });
+  }
+
+  const userId = session?.user?.id ?? null;
+  const canAccess = isTestAdmin(req) || (await canUserAccessLibrary(libraryId, userId));
+  if (!canAccess) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
   const query = (searchParams.get("query") ?? "").trim();
   const tag = (searchParams.get("tag") ?? "").trim().toLowerCase();
   const artist = (searchParams.get("artist") ?? "").trim();
@@ -37,7 +53,7 @@ export async function GET(req: Request) {
         : { updatedAt: sortOrder };
 
   let items = await prisma.song.findMany({
-    where: {},
+    where: { libraryId },
     orderBy,
     select: {
       id: true,
@@ -80,9 +96,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isTestAdmin(req)) {
-    const session = await getServerAuthSession();
-    if (!isAdminSession(session)) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const session = await getServerAuthSession();
+  if (!isTestAdmin(req) && !isAuthenticatedSession(session)) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
   const json = await req.json().catch(() => null);
@@ -92,10 +108,26 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
+  let libraryId = data.libraryId?.trim();
+  if (!libraryId && isTestAdmin(req)) {
+    const first = await prisma.library.findFirst({ select: { id: true } });
+    libraryId = first?.id ?? undefined;
+  }
+  if (!libraryId) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "libraryId requis" }, { status: 400 });
+  }
+
+  const userId = session?.user?.id ?? null;
+  const canEdit = isTestAdmin(req) || (await canUserAccessLibrary(libraryId, userId, { requireEdit: true }));
+  if (!canEdit) {
+    return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
   const tags = normalizeTags(data.tags ?? []);
 
   const created = await prisma.song.create({
     data: {
+      libraryId,
       title: data.title,
       artist: data.artist ?? null,
       key: data.key ?? null,
