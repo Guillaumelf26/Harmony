@@ -21,6 +21,21 @@
 .chordpro-editor .cm-content {
   background-color: transparent !important;
 }
+
+/* Éviter le zoom automatique sur mobile (iOS Safari zoom si font-size < 16px) */
+@media (max-width: 768px) {
+  .chordpro-editor .cm-content,
+  .chordpro-editor .cm-line {
+    font-size: 16px !important;
+  }
+  /* Champs de formulaire (titre, artiste, etc.) */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  textarea {
+    font-size: 16px !important;
+  }
+}
 .chordpro-editor .cm-gutters {
   background-color: transparent !important;
 }
