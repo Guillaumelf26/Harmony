@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ChordProDocument, ChordProLine } from "./parse";
 
 type RenderLine = { chords: string; lyrics: string };
@@ -47,14 +48,19 @@ function padRight(s: string, len: number) {
 }
 
 /** Preview : 2 lignes par ligne de texte (accords puis paroles), alignement par caractères en monospace */
-export function ChordProPreview({ doc }: { doc: ChordProDocument }) {
+export function ChordProPreview({ doc, renderTitleRight }: { doc: ChordProDocument; renderTitleRight?: () => ReactNode }) {
   const lines = renderChordProToLines(doc);
   return (
     <div className="text-sm leading-relaxed">
-      {doc.title ? (
-        <h2 className="text-2xl md:text-3xl font-lora font-medium mb-1 text-zinc-900 dark:text-zinc-100">
-          {doc.title}
-        </h2>
+      {doc.title || renderTitleRight ? (
+        <div className="flex items-center justify-between gap-3 mb-1">
+          {doc.title ? (
+            <h2 className="text-2xl md:text-3xl font-lora font-medium text-zinc-900 dark:text-zinc-100 min-w-0 flex-1">
+              {doc.title}
+            </h2>
+          ) : <span className="flex-1" />}
+          {renderTitleRight?.()}
+        </div>
       ) : null}
       <div className="flex items-center gap-2 mb-4">
         {doc.artist ? (

@@ -28,11 +28,12 @@
   .chordpro-editor .cm-line {
     font-size: 16px !important;
   }
-  /* Champs de formulaire (titre, artiste, etc.) */
+  /* Champs de formulaire et recherche (éviter zoom iOS) */
   input[type="text"],
   input[type="email"],
   input[type="number"],
-  textarea {
+  textarea,
+  .sidebar-search-input {
     font-size: 16px !important;
   }
   /* Scroll éditeur sur mobile : momentum + touch */

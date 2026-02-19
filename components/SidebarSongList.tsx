@@ -102,16 +102,17 @@ export function SidebarSongList({
         <div className="p-3 space-y-2">
           <div className="flex gap-2">
             <input
+              type="text"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Recherche titre / artiste"
-              className="flex-1 min-w-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors"
+              className="flex-1 min-w-0 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/30 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus-visible:bg-white dark:focus-visible:bg-zinc-950/50 focus:ring-2 focus:ring-accent-500 transition-colors sidebar-search-input"
             />
             {onNew ? (
               <button
                 type="button"
                 onClick={onNew}
-                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900 transition-colors"
+                className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white dark:bg-white text-zinc-900 dark:text-zinc-900 border border-zinc-200 dark:border-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-200 transition-colors shadow-sm"
                 title="Nouveau chant"
                 aria-label="Nouveau chant"
               >
@@ -129,7 +130,7 @@ export function SidebarSongList({
               <button
                 type="button"
                 onClick={() => setFilterOpen((o) => !o)}
-                className="rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[100px] justify-between"
+                className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[100px] justify-between"
               >
                 <span>{filterFavorites === "favorites" ? "Favoris" : "Tout"}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={filterOpen ? "rotate-180" : ""}>
@@ -137,14 +138,14 @@ export function SidebarSongList({
                 </svg>
               </button>
               {filterOpen ? (
-                <div className="absolute left-0 top-full mt-2 z-50 min-w-[140px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                <div className="absolute left-0 top-full mt-2 z-50 min-w-[140px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80">
                   <button
                     type="button"
                     onClick={() => {
                       onFilterFavoritesChange("all");
                       setFilterOpen(false);
                     }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${filterFavorites === "all" ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"}`}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${filterFavorites === "all" ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100" : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"}`}
                   >
                     Tout
                   </button>
@@ -154,7 +155,7 @@ export function SidebarSongList({
                       onFilterFavoritesChange("favorites");
                       setFilterOpen(false);
                     }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-3 ${filterFavorites === "favorites" ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"}`}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-3 ${filterFavorites === "favorites" ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100" : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"}`}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={filterFavorites === "favorites" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="shrink-0">
                       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
@@ -171,7 +172,7 @@ export function SidebarSongList({
                 <button
                   type="button"
                   onClick={() => setSortOpen((o) => !o)}
-                  className="rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[140px] justify-between"
+                  className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[140px] justify-between"
                 >
                   <span>{currentLabel}</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={sortOpen ? "rotate-180" : ""}>
@@ -179,7 +180,7 @@ export function SidebarSongList({
                   </svg>
                 </button>
                 {sortOpen ? (
-                  <div className="absolute left-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                  <div className="absolute left-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80">
                     {sortOptions.map((opt) => {
                       const active = opt.value === `${sortBy}-${sortOrder}`;
                       return (
@@ -192,7 +193,7 @@ export function SidebarSongList({
                             setSortOpen(false);
                           }}
                           className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-3 ${
-                            active ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"
+                            active ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100" : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
                           }`}
                         >
                           {opt.label}

@@ -59,7 +59,7 @@ export function LibrarySelector({
         </svg>
       </button>
       {open ? (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80 max-h-64 overflow-auto">
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80 max-h-64 overflow-auto outline-none">
           {libraries.owned.length > 0 ? (
             <>
               <div className="px-3 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
@@ -74,7 +74,7 @@ export function LibrarySelector({
                     setOpen(false);
                   }}
                   className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between gap-2 ${
-                    selectedId === lib.id ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"
+                    selectedId === lib.id ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100" : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
                   }`}
                 >
                   <span className="truncate">{lib.name}</span>
@@ -99,7 +99,7 @@ export function LibrarySelector({
                     setOpen(false);
                   }}
                   className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between gap-2 ${
-                    selectedId === lib.id ? "bg-zinc-800/80 text-zinc-100" : "text-zinc-100 hover:bg-zinc-800/80"
+                    selectedId === lib.id ? "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100" : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -115,10 +115,10 @@ export function LibrarySelector({
               ))}
             </>
           ) : null}
-          <div className="border-t border-zinc-800 mt-2 pt-2">
+          <div className="border-t border-zinc-200 dark:border-zinc-800 mt-2 pt-2">
             <Link
               href="/admin/libraries"
-              className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"
+              className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"
               onClick={() => setOpen(false)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
@@ -133,7 +133,7 @@ export function LibrarySelector({
                 onJoinLibrary();
                 setOpen(false);
               }}
-              className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"
+              className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -144,19 +144,19 @@ export function LibrarySelector({
               Rejoindre une bibliothèque
             </button>
             <button
-                type="button"
-                onClick={() => {
-                  onCreateLibrary();
-                  setOpen(false);
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                Créer une bibliothèque
-              </button>
+              type="button"
+              onClick={() => {
+                onCreateLibrary();
+                setOpen(false);
+              }}
+              className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+              Créer une bibliothèque
+            </button>
           </div>
         </div>
       ) : null}

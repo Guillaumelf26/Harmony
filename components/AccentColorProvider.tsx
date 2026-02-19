@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 const DEFAULT_ACCENT = "#FA7A5F";
 
@@ -18,37 +11,21 @@ type AccentContextValue = {
 
 const AccentColorContext = createContext<AccentContextValue | null>(null);
 
-function applyAccentColor(color: string) {
-  document.documentElement.style.setProperty("--color-accent", color);
-}
-
 export function AccentColorProvider({ children }: { children: ReactNode }) {
-  const [accentColor, setAccentColorState] = useState<string>(DEFAULT_ACCENT);
-
-  const setAccentColor = useCallback((color: string) => {
-    setAccentColorState(color);
-    applyAccentColor(color);
-  }, []);
-
   useEffect(() => {
-    fetch("/api/user/preferences")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((prefs: { accentColor?: string } | null) => {
-        const color = prefs?.accentColor ?? DEFAULT_ACCENT;
-        setAccentColorState(color);
-        applyAccentColor(color);
-      })
-      .catch(() => applyAccentColor(DEFAULT_ACCENT));
+    document.documentElement.style.setProperty("--color-accent", DEFAULT_ACCENT);
   }, []);
 
   return (
-    <AccentColorContext.Provider value={{ accentColor, setAccentColor }}>
+    <AccentColorContext.Provider
+      value={{ accentColor: DEFAULT_ACCENT, setAccentColor: () => {} }}
+    >
       {children}
     </AccentColorContext.Provider>
   );
 }
 
-export function useAccentColor() {
+export function useAccentColor(): AccentContextValue {
   const ctx = useContext(AccentColorContext);
   return ctx ?? { accentColor: DEFAULT_ACCENT, setAccentColor: () => {} };
 }
