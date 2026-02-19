@@ -1162,9 +1162,9 @@ export default function AdminClient() {
               </div>
               </div>
               {/* Éditeur ChordPro : prend l'espace restant, même largeur max que le formulaire */}
-              <div className="flex-1 min-h-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4">
+              <div className="flex-1 min-h-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4 overflow-hidden">
                 <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 shrink-0">Paroles & accords</div>
-                <div className="flex-1 min-h-[200px]">
+                <div className="flex-1 min-h-[max(200px,40vh)]">
                   <EditorPane
                     ref={editorRef}
                     value={editorText}

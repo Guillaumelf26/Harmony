@@ -35,6 +35,13 @@
   textarea {
     font-size: 16px !important;
   }
+  /* Scroll éditeur sur mobile : momentum + touch */
+  .chordpro-editor .cm-scroller {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
 }
 .chordpro-editor .cm-gutters {
   background-color: transparent !important;
