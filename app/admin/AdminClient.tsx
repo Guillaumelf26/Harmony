@@ -75,6 +75,13 @@ export default function AdminClient() {
   const [editModeTab, setEditModeTab] = useState<"editor" | "preview">("editor");
   const [previewWidth, setPreviewWidth] = useState(470);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [maxEditorHeight, setMaxEditorHeight] = useState(600);
+  useEffect(() => {
+    const update = () => setMaxEditorHeight(Math.min(window.innerHeight * 0.6, 800));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
   const [query, setQuery] = useState("");
   const [filterFavorites, setFilterFavorites] = useState<"all" | "favorites">("all");
   const [sortBy, setSortBy] = useState<"title" | "artist" | "updatedAt">("updatedAt");
@@ -1007,10 +1014,10 @@ export default function AdminClient() {
                   <ChordProPreview doc={previewDoc} />
                 </div>
               ) : (
-              <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
-              {/* Contenu éditeur : formulaire scrollable + éditeur qui prend l'espace restant (évite ascenseur inutile) */}
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="shrink-0 overflow-y-auto max-h-[45vh]">
+              <div className="flex flex-col min-h-0 flex-1 overflow-hidden h-full">
+              {/* Contenu éditeur : colonne scrollable (style Fretlist) + éditeur hauteur fixe pour scroll interne */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden">
+              <div className="shrink-0">
               <div className="mx-auto max-w-3xl space-y-4 px-4 py-4">
               {/* Titre + Artiste : flex row comme Fretlist */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -1205,10 +1212,18 @@ export default function AdminClient() {
 
               </div>
               </div>
-              {/* Éditeur ChordPro : prend l'espace restant, même largeur max que le formulaire */}
-              <div className="flex-1 min-h-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4 overflow-hidden">
+              {/* Éditeur ChordPro : hauteur adaptée au contenu (lignes), avec min/max pour scroll interne si long */}
+              <div className="shrink-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4">
                 <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 shrink-0">Paroles & accords</div>
-                <div className="flex-1 min-h-[max(200px,40vh)]">
+                <div
+                  className="min-h-[200px] overflow-hidden"
+                  style={{
+                    height: Math.min(
+                      Math.max((editorText ?? "").split("\n").length * 22 + 100, 200),
+                      maxEditorHeight
+                    ),
+                  }}
+                >
                   <EditorPane
                     ref={editorRef}
                     value={editorText}
