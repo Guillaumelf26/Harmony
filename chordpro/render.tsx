@@ -53,12 +53,12 @@ export function ChordProPreview({ doc, renderTitleRight }: { doc: ChordProDocume
   return (
     <div className="text-sm leading-relaxed">
       {doc.title || renderTitleRight ? (
-        <div className="flex items-center justify-between gap-3 mb-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           {doc.title ? (
-            <h2 className="text-2xl md:text-3xl font-lora font-medium text-zinc-900 dark:text-zinc-100 min-w-0 flex-1">
+            <h2 className="text-2xl md:text-3xl font-lora font-medium text-zinc-900 dark:text-zinc-100">
               {doc.title}
             </h2>
-          ) : <span className="flex-1" />}
+          ) : null}
           {renderTitleRight?.()}
         </div>
       ) : null}
@@ -84,8 +84,8 @@ export function ChordProPreview({ doc, renderTitleRight }: { doc: ChordProDocume
             ) : (
               <>
                 <div
-                  className="min-h-[1.2em] font-medium"
-                  style={{ whiteSpace: "pre", color: "#ffb900" }}
+                  className="min-h-[1.2em] font-medium text-amber-700 dark:text-amber-400"
+                  style={{ whiteSpace: "pre" }}
                 >
                   {chords}
                 </div>
