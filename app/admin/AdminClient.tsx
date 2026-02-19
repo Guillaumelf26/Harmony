@@ -1278,8 +1278,19 @@ export default function AdminClient() {
         <ManageAccessModal
           libraryId={manageAccessLibraryId}
           libraryName={libraries.owned.find((l) => l.id === manageAccessLibraryId)?.name ?? "Bibliothèque"}
+          isOwner
           onClose={() => setManageAccessLibraryId(null)}
           onMembersChanged={refreshLibraries}
+          onDeleted={(deletedId) => {
+            setManageAccessLibraryId(null);
+            if (selectedLibraryId === deletedId) {
+              setSelectedId(null);
+              setSelectedSong(null);
+              setEditMode(false);
+              setDirty(false);
+            }
+            void refreshLibraries();
+          }}
         />
       )}
     </div>

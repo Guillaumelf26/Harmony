@@ -12,16 +12,19 @@ type Member = {
 type Props = {
   libraryId: string;
   libraryName: string;
+  isOwner?: boolean;
   onClose: () => void;
   onMembersChanged: () => void;
+  onDeleted?: (deletedLibraryId: string) => void;
 };
 
-export function ManageAccessModal({ libraryId, libraryName, onClose, onMembersChanged }: Props) {
+export function ManageAccessModal({ libraryId, libraryName, isOwner = true, onClose, onMembersChanged, onDeleted }: Props) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchMembers() {
@@ -72,6 +75,20 @@ export function ManageAccessModal({ libraryId, libraryName, onClose, onMembersCh
       }
     } finally {
       setRevoking(null);
+    }
+  }
+
+  async function deleteLibrary() {
+    if (!window.confirm(`Supprimer définitivement la bibliothèque « ${libraryName} » ? Tous les chants seront perdus.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/libraries/${libraryId}`, { method: "DELETE" });
+      if (res.ok) {
+        onClose();
+        onDeleted?.(libraryId);
+      }
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -152,6 +169,20 @@ export function ManageAccessModal({ libraryId, libraryName, onClose, onMembersCh
               </ul>
             )}
           </div>
+
+          {isOwner ? (
+            <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Zone de danger</h4>
+              <button
+                type="button"
+                onClick={deleteLibrary}
+                disabled={deleting}
+                className="rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/50 disabled:opacity-60"
+              >
+                {deleting ? "Suppression..." : "Supprimer la bibliothèque"}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
