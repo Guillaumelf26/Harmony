@@ -2,7 +2,8 @@
 
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useClickOutside } from "@/lib/useClickOutside";
 
 function getInitial(name: string | null | undefined, email: string | null | undefined): string {
@@ -19,8 +20,24 @@ function getInitial(name: string | null | undefined, email: string | null | unde
 export function SessionMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setOpen(false), open);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(ref, () => setOpen(false), open, menuRef);
+
+  const handleToggle = () => {
+    if (!open && ref.current && typeof document !== "undefined") {
+      const rect = ref.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 8, left: Math.max(8, rect.left) });
+    } else if (!open) {
+      setPosition({ top: 0, left: 0 });
+    }
+    setOpen((o) => !o);
+  };
+
+  useEffect(() => {
+    if (!open) setPosition(null);
+  }, [open]);
 
   if (status === "loading") {
     return (
@@ -41,18 +58,13 @@ export function SessionMenu() {
 
   const initial = getInitial(session.user.name, session.user.email);
 
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-center w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-sm hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-        title={session.user.email ?? session.user.name ?? undefined}
-      >
-        {initial}
-      </button>
-      {open ? (
-        <div className="absolute right-0 top-full mt-2 z-[100] min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+  const menuContent = open && position && typeof document !== "undefined"
+    ? createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[200] min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80"
+          style={{ top: position.top, left: position.left }}
+        >
           <Link
             href="/admin/settings"
             onClick={() => setOpen(false)}
@@ -79,8 +91,22 @@ export function SessionMenu() {
             </svg>
             Se déconnecter
           </button>
-        </div>
-      ) : null}
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex items-center justify-center w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-sm hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+        title={session.user.email ?? session.user.name ?? undefined}
+      >
+        {initial}
+      </button>
+      {menuContent}
     </div>
   );
 }

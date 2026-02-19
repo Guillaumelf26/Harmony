@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Lora } from "next/font/google";
 import { cookies } from "next/headers";
 import { Providers } from "@/components/Providers";
@@ -6,6 +6,13 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   title: "Harmony",

@@ -657,10 +657,10 @@ export default function AdminClient() {
             aria-label="Fermer le panneau"
             onClick={() => setSidebarOpen(false)}
             onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            className="fixed inset-0 z-[55] bg-black/50 md:hidden"
           />
           <aside
-            className="fixed left-0 top-0 bottom-0 z-50 w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl"
+            className="fixed left-0 top-0 bottom-0 z-[70] w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl"
             aria-label="Liste des chants"
           >
             <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
@@ -709,10 +709,19 @@ export default function AdminClient() {
         </>
       )}
       {sidebarOpen && !isMobile && (
-        <aside
-          className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 overflow-hidden backdrop-blur-sm"
-          aria-label="Liste des chants"
-        >
+        <>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Fermer le panneau"
+            onClick={() => setSidebarOpen(false)}
+            onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
+            className="fixed inset-0 z-[55] bg-black/30 hidden md:block"
+          />
+          <aside
+            className="fixed left-0 top-0 bottom-0 z-[70] w-72 xl:w-80 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 overflow-hidden backdrop-blur-sm shadow-xl hidden md:flex"
+            aria-label="Liste des chants"
+          >
           <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
             <LibrarySelector
               libraries={libraries}
@@ -750,10 +759,11 @@ export default function AdminClient() {
             <SessionMenu />
           </div>
         </aside>
+        </>
       )}
 
-      {/* Zone principale : flex-1 min-w-0 pour éviter débordement */}
-      <div className="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
+      {/* Zone principale : z-[60] pour rester au-dessus du backdrop (z-55) et permettre de cliquer sur le header */}
+      <div className="relative z-[60] flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
         <header className="relative z-10 flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
           <div className="flex w-full items-center justify-between gap-2 px-3 py-2 min-h-[44px]">
             <button
@@ -774,14 +784,14 @@ export default function AdminClient() {
                 </svg>
               )}
             </button>
-            <div className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+            <div className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 flex-nowrap overflow-x-auto">
               {selectedId && !editMode ? (
                 <>
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <button type="button" onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700" title="-1 demi-ton">−</button>
                     <span className="flex h-8 min-w-[2rem] items-center justify-center text-sm font-medium text-white px-1">{transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}</span>
                     <button type="button" onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700" title="+1 demi-ton">+</button>
-                    {transposeSemitones !== 0 ? <button type="button" onClick={() => setTransposeSemitones(0)} className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-zinc-800/80 px-1.5 text-xs font-medium text-white hover:bg-zinc-700 ml-0.5" title="Réinitialiser">Reset</button> : null}
+                    {transposeSemitones !== 0 ? <button type="button" onClick={() => setTransposeSemitones(0)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-white hover:bg-zinc-700" title="Réinitialiser"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg></button> : null}
                   </div>
                   {selectedSong?.referenceUrl?.trim() ? (
                     <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Ouvrir le lien">
@@ -870,7 +880,6 @@ export default function AdminClient() {
                   songId={selectedId}
                   transposeSemitones={transposeSemitones}
                   onEditClick={() => setEditMode(true)}
-                  sidebarOpen={sidebarOpen}
                 />
               ) : (
               <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
