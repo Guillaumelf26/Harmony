@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import JSZip from "jszip";
 
 type LibraryItem = {
   id: string;
@@ -25,6 +26,10 @@ export default function LibrariesClient() {
   const [joinCode, setJoinCode] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createLibraryName, setCreateLibraryName] = useState("");
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   async function refreshLibraries() {
     const res = await fetch("/api/libraries", { cache: "no-store" });
@@ -97,6 +102,18 @@ export default function LibrariesClient() {
 
             {/* Actions */}
             <section className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setImportModalOpen(true)}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Importer un backup
+              </button>
               <button
                 type="button"
                 onClick={() => setJoinModalOpen(true)}
@@ -176,6 +193,84 @@ export default function LibrariesClient() {
       )}
 
       {/* Modal Créer */}
+      {/* Modal Importer */}
+      {importModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setImportModalOpen(false); setImportError(null); }}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Importer un backup</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+              Sélectionnez un fichier .zip ou .json exporté depuis Harmony. Une nouvelle bibliothèque sera créée avec les chants.
+            </p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-4">
+              Les fichiers audio ne sont pas inclus dans les backups.
+            </p>
+            {importError && (
+              <p className="text-sm text-red-600 dark:text-red-400 mb-3">{importError}</p>
+            )}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".zip,.json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setImporting(true);
+                setImportError(null);
+                try {
+                  let json: unknown;
+                  if (file.name.endsWith(".json")) {
+                    json = JSON.parse(await file.text());
+                  } else {
+                    const zip = await JSZip.loadAsync(file);
+                    const backupFile = zip.file("backup.json") ?? zip.file("manifest.json");
+                    if (!backupFile) {
+                      setImportError("Fichier backup.json ou manifest.json introuvable dans le zip.");
+                      return;
+                    }
+                    json = JSON.parse(await backupFile.async("string"));
+                  }
+                  const res = await fetch("/api/libraries/import", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify(json),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    setImportError((data as { message?: string }).message ?? "Format de backup invalide.");
+                    return;
+                  }
+                  setImportModalOpen(false);
+                  await refreshLibraries();
+                } catch (err) {
+                  setImportError(err instanceof Error ? err.message : "Erreur lors de la lecture du fichier.");
+                } finally {
+                  setImporting(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setImportModalOpen(false); setImportError(null); }}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => importInputRef.current?.click()}
+                disabled={importing}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600 disabled:opacity-60"
+              >
+                {importing ? "Import…" : "Choisir un fichier"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {createModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCreateModalOpen(false)}>
           <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
@@ -220,6 +315,42 @@ export default function LibrariesClient() {
         </div>
       )}
     </div>
+  );
+}
+
+function ExportBackupButton({ libraryId, libraryName }: { libraryId: string; libraryName: string }) {
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/libraries/${libraryId}/export`);
+      if (!res.ok) throw new Error("Export failed");
+      const backup = (await res.json()) as { libraryName: string; exportedAt: string; songs: unknown[] };
+      const zip = new JSZip();
+      zip.file("backup.json", JSON.stringify(backup, null, 2));
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `harmony-backup-${libraryName.replace(/[^a-zA-Z0-9]/g, "-")}-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleExport}
+      disabled={exporting}
+      title="Les fichiers audio ne sont pas inclus dans le backup"
+      className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-50"
+    >
+      {exporting ? "Export…" : "Backup"}
+    </button>
   );
 }
 
@@ -388,17 +519,21 @@ function LibraryCard({
             >
               Partager
             </button>
+            <ExportBackupButton libraryId={library.id} libraryName={library.name} />
           </>
         )}
         {!isOwner && (
-          <button
-            type="button"
-            onClick={leaveLibrary}
-            disabled={leaving}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
-          >
-            {leaving ? "…" : "Quitter"}
-          </button>
+          <>
+            <ExportBackupButton libraryId={library.id} libraryName={library.name} />
+            <button
+              type="button"
+              onClick={leaveLibrary}
+              disabled={leaving}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+            >
+              {leaving ? "…" : "Quitter"}
+            </button>
+          </>
         )}
         {isOwner && (
           <button
