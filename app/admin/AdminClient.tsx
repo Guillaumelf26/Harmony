@@ -94,6 +94,10 @@ export default function AdminClient() {
   const [readingMenuOpen, setReadingMenuOpen] = useState(false);
   const editMenuRef = useRef<HTMLDivElement>(null);
   const readingMenuRef = useRef<HTMLDivElement>(null);
+  const readingMenuContentRef = useRef<HTMLDivElement>(null);
+  const editMenuContentRef = useRef<HTMLDivElement>(null);
+  const [readingMenuPos, setReadingMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [editMenuPos, setEditMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [transposeSemitones, setTransposeSemitones] = useState(0);
   const { isFavorite, toggleFavorite } = useFavorites();
   const [libraries, setLibraries] = useState<{ owned: Array<{ id: string; name: string; _count?: { songs: number } }>; shared: Array<{ id: string; name: string; _count?: { songs: number } }> }>({ owned: [], shared: [] });
@@ -179,8 +183,22 @@ export default function AdminClient() {
     };
   }, [activeChordInfo, updatePopupPosition]);
 
-  useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen);
-  useClickOutside(readingMenuRef, () => setReadingMenuOpen(false), readingMenuOpen);
+  useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen, editMenuContentRef);
+  useClickOutside(readingMenuRef, () => setReadingMenuOpen(false), readingMenuOpen, readingMenuContentRef);
+
+  useEffect(() => {
+    if (readingMenuOpen && readingMenuRef.current && typeof document !== "undefined") {
+      const rect = readingMenuRef.current.getBoundingClientRect();
+      setReadingMenuPos({ top: rect.bottom + 8, left: Math.max(8, rect.right - 180) });
+    } else setReadingMenuPos(null);
+  }, [readingMenuOpen]);
+
+  useEffect(() => {
+    if (editMenuOpen && editMenuRef.current && typeof document !== "undefined") {
+      const rect = editMenuRef.current.getBoundingClientRect();
+      setEditMenuPos({ top: rect.bottom + 8, left: Math.max(8, rect.right - 180) });
+    } else setEditMenuPos(null);
+  }, [editMenuOpen]);
 
   async function refreshLibraries() {
     const res = await fetch("/api/libraries", { cache: "no-store" });
@@ -656,8 +674,9 @@ export default function AdminClient() {
             tabIndex={0}
             aria-label="Fermer le panneau"
             onClick={() => setSidebarOpen(false)}
+            onPointerDown={() => setSidebarOpen(false)}
             onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
-            className="fixed inset-0 z-[55] bg-black/50 md:hidden"
+            className="fixed inset-0 z-[65] bg-black/50 md:hidden"
           />
           <aside
             className="fixed left-0 top-0 bottom-0 z-[70] w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl"
@@ -716,7 +735,7 @@ export default function AdminClient() {
             aria-label="Fermer le panneau"
             onClick={() => setSidebarOpen(false)}
             onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
-            className="fixed inset-0 z-[55] bg-black/30 hidden md:block"
+            className="fixed inset-0 z-[65] bg-black/30 hidden md:block"
           />
           <aside
             className="fixed left-0 top-0 bottom-0 z-[70] w-72 xl:w-80 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 overflow-hidden backdrop-blur-sm shadow-xl hidden md:flex"
@@ -762,9 +781,16 @@ export default function AdminClient() {
         </>
       )}
 
-      {/* Zone principale : z-[60] pour rester au-dessus du backdrop (z-55) et permettre de cliquer sur le header */}
-      <div className="relative z-[60] flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
-        <header className="relative z-10 flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
+      {/* Zone principale : z-[60]. Clic ferme la sidebar (backdrop masqué par cette div) */}
+      <div
+        className="relative z-[60] flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden"
+        onClick={sidebarOpen ? () => setSidebarOpen(false) : undefined}
+        role={sidebarOpen ? "button" : undefined}
+        tabIndex={sidebarOpen ? 0 : undefined}
+        onKeyDown={sidebarOpen ? (e) => e.key === "Enter" && setSidebarOpen(false) : undefined}
+        aria-label={sidebarOpen ? "Fermer le panneau (clic)" : undefined}
+      >
+        <header className="relative z-10 flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md" onClick={(e) => e.stopPropagation()}>
           <div className="flex w-full items-center justify-between gap-2 px-3 py-2 min-h-[44px]">
             <button
               type="button"
@@ -793,28 +819,47 @@ export default function AdminClient() {
                     <button type="button" onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700" title="+1 demi-ton">+</button>
                     {transposeSemitones !== 0 ? <button type="button" onClick={() => setTransposeSemitones(0)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-white hover:bg-zinc-700" title="Réinitialiser"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg></button> : null}
                   </div>
-                  {selectedSong?.referenceUrl?.trim() ? (
+                  {!isMobile && selectedSong?.referenceUrl?.trim() ? (
                     <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Ouvrir le lien">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                     </a>
                   ) : null}
-                  <button type="button" onClick={() => void toggleFavorite(selectedId)} className={`rounded-lg p-2 shrink-0 ${isFavorite(selectedId) ? "bg-accent-500/20 text-accent-500 dark:text-accent-400" : "bg-zinc-800/80 text-white hover:bg-zinc-700"}`} title={isFavorite(selectedId) ? "Retirer des favoris" : "Ajouter aux favoris"}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(selectedId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
-                  </button>
+                  {!isMobile ? (
+                    <button type="button" onClick={() => void toggleFavorite(selectedId)} className={`rounded-lg p-2 shrink-0 ${isFavorite(selectedId) ? "bg-accent-500/20 text-accent-500 dark:text-accent-400" : "bg-zinc-800/80 text-white hover:bg-zinc-700"}`} title={isFavorite(selectedId) ? "Retirer des favoris" : "Ajouter aux favoris"}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(selectedId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                    </button>
+                  ) : null}
                   <div className="relative" ref={readingMenuRef}>
-                    <button type="button" onClick={() => setReadingMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Menu">
+                    <button type="button" onClick={() => setReadingMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0 touch-manipulation" title="Menu">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
                     </button>
-                    {readingMenuOpen ? (
-                      <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
-                        <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
-                        <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
-                        <button type="button" onClick={() => { onExport("chordpro"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
-                        <button type="button" onClick={() => { onExport("txt"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
-                        <button type="button" onClick={() => { onExport("pdf"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
-                        <button type="button" onClick={() => { onDelete(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
-                      </div>
-                    ) : null}
+                    {readingMenuOpen && readingMenuPos && typeof document !== "undefined"
+                      ? createPortal(
+                          <div ref={readingMenuContentRef} className="fixed z-[200] min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80" style={{ top: readingMenuPos.top, left: readingMenuPos.left }}>
+                            {isMobile ? (
+                              <>
+                                <button type="button" onClick={() => { void toggleFavorite(selectedId); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(selectedId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                                  {isFavorite(selectedId) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                                </button>
+                                {selectedSong?.referenceUrl?.trim() ? (
+                                  <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" onClick={() => setReadingMenuOpen(false)} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                    Ouvrir le lien
+                                  </a>
+                                ) : null}
+                              </>
+                            ) : null}
+                            <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
+                            <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
+                            <button type="button" onClick={() => { onExport("chordpro"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
+                            <button type="button" onClick={() => { onExport("txt"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
+                            <button type="button" onClick={() => { onExport("pdf"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
+                            <button type="button" onClick={() => { onDelete(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
+                          </div>,
+                          document.body
+                        )
+                      : null}
                   </div>
                   <Link href={selectedId ? `/live/${selectedId}` : "#"} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Mode live">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3" /></svg>
@@ -828,19 +873,22 @@ export default function AdminClient() {
                   {(dirty || editMode) && onCancel ? <button onClick={onCancel} className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900">Cancel</button> : null}
                   {dirty ? <button onClick={onSave} disabled={saving} className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-600 disabled:opacity-60" title="Ctrl/Cmd+S">Save</button> : null}
                   <div className="relative" ref={editMenuRef}>
-                    <button type="button" onClick={() => setEditMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Menu">
+                    <button type="button" onClick={() => setEditMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0 touch-manipulation" title="Menu">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
                     </button>
-                    {editMenuOpen ? (
-                      <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
-                        <button type="button" onClick={() => { onImportClick(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
-                        <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
-                        <button type="button" onClick={() => { onExport("chordpro"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
-                        <button type="button" onClick={() => { onExport("txt"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
-                        <button type="button" onClick={() => { onExport("pdf"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
-                        <button type="button" onClick={() => { onDelete(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
-                      </div>
-                    ) : null}
+                    {editMenuOpen && editMenuPos && typeof document !== "undefined"
+                      ? createPortal(
+                          <div ref={editMenuContentRef} className="fixed z-[200] min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80" style={{ top: editMenuPos.top, left: editMenuPos.left }}>
+                            <button type="button" onClick={() => { onImportClick(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
+                            <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
+                            <button type="button" onClick={() => { onExport("chordpro"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
+                            <button type="button" onClick={() => { onExport("txt"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
+                            <button type="button" onClick={() => { onExport("pdf"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
+                            <button type="button" onClick={() => { onDelete(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
+                          </div>,
+                          document.body
+                        )
+                      : null}
                   </div>
                 </div>
               ) : null}

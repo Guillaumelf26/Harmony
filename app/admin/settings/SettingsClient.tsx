@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import type { UserPreferences } from "@/app/api/user/preferences/route";
 import { useAccentColor } from "@/components/AccentColorProvider";
 
@@ -23,10 +25,24 @@ function applyTheme(theme: string) {
 }
 
 export default function SettingsClient() {
+  const router = useRouter();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { accentColor, setAccentColor } = useAccentColor();
+
+  const [passwordCurrent, setPasswordCurrent] = useState("");
+  const [passwordNew, setPasswordNew] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/preferences")
@@ -84,6 +100,63 @@ export default function SettingsClient() {
   }
 
   const theme = preferences?.theme ?? "dark";
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    if (passwordNew !== passwordConfirm) {
+      setPasswordError("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await fetch("/api/user/password", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordCurrent,
+          newPassword: passwordNew,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      if (!res.ok) {
+        setPasswordError(data.message ?? "Erreur lors du changement de mot de passe.");
+        return;
+      }
+      setPasswordSuccess(true);
+      setPasswordCurrent("");
+      setPasswordNew("");
+      setPasswordConfirm("");
+    } finally {
+      setPasswordLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleteError(null);
+    setDeleteLoading(true);
+    try {
+      const res = await fetch("/api/user/delete-account", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          password: deletePassword,
+          confirmation: deleteConfirmation,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      if (!res.ok) {
+        setDeleteError(data.message ?? "Erreur lors de la suppression.");
+        return;
+      }
+      await signOut({ callbackUrl: "/login" });
+      router.push("/login");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
@@ -182,6 +255,140 @@ export default function SettingsClient() {
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                   La couleur est enregistrée automatiquement lorsque vous en sélectionnez une nouvelle.
                 </p>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+                Sécurité
+              </h2>
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30 p-4 space-y-4">
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="font-medium">Changer le mot de passe</div>
+                  <div className="space-y-3">
+                    <label className="block">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-300">Mot de passe actuel</span>
+                      <input
+                        type="password"
+                        value={passwordCurrent}
+                        onChange={(e) => setPasswordCurrent(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm"
+                        autoComplete="current-password"
+                        required
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-300">Nouveau mot de passe</span>
+                      <input
+                        type="password"
+                        value={passwordNew}
+                        onChange={(e) => setPasswordNew(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-300">Confirmer le nouveau mot de passe</span>
+                      <input
+                        type="password"
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                    </label>
+                  </div>
+                  {passwordError ? (
+                    <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+                  ) : null}
+                  {passwordSuccess ? (
+                    <p className="text-sm text-green-600 dark:text-green-400">Mot de passe modifié avec succès.</p>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="rounded-lg bg-zinc-800 dark:bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-600 disabled:opacity-50"
+                  >
+                    {passwordLoading ? "En cours…" : "Changer le mot de passe"}
+                  </button>
+                </form>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+                Zone de danger
+              </h2>
+              <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4">
+                <div className="font-medium text-red-800 dark:text-red-200">Supprimer mon compte</div>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                  Cette action est irréversible. Toutes vos données (bibliothèques, chants, favoris) seront définitivement supprimées.
+                </p>
+                {!deleteConfirmOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="mt-3 rounded-lg border border-red-300 dark:border-red-800 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  >
+                    Supprimer mon compte
+                  </button>
+                ) : (
+                  <form onSubmit={handleDeleteAccount} className="mt-3 space-y-3">
+                    <label className="block">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-300">Mot de passe actuel</span>
+                      <input
+                        type="password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm"
+                        autoComplete="current-password"
+                        placeholder="Confirmez votre mot de passe"
+                        required
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-300">
+                        Tapez <span className="font-mono font-semibold">SUPPRIMER</span> pour confirmer
+                      </span>
+                      <input
+                        type="text"
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm font-mono"
+                        placeholder="SUPPRIMER"
+                        required
+                      />
+                    </label>
+                    {deleteError ? (
+                      <p className="text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteConfirmOpen(false);
+                          setDeletePassword("");
+                          setDeleteConfirmation("");
+                          setDeleteError(null);
+                        }}
+                        className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={deleteLoading || deleteConfirmation.trim().toUpperCase() !== "SUPPRIMER"}
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deleteLoading ? "Suppression…" : "Supprimer définitivement"}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </section>
 
