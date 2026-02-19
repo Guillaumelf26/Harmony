@@ -676,8 +676,8 @@ export default function AdminClient() {
         <div className="noise-overlay pointer-events-none fixed inset-0" aria-hidden />
       </div>
 
-      {/* Sidebar gauche : overlay sur mobile (fermeture au clic extérieur), dans le flux sur desktop */}
-      {sidebarOpen && isMobile && (
+      {/* Sidebar gauche : overlay sur mobile (fermeture au clic extérieur), animation slide */}
+      {isMobile && (
         <>
           <div
             role="button"
@@ -686,10 +686,11 @@ export default function AdminClient() {
             onClick={() => setSidebarOpen(false)}
             onPointerDown={() => setSidebarOpen(false)}
             onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
-            className="fixed inset-0 z-[65] bg-black/50 md:hidden"
+            className={`fixed inset-0 z-[65] bg-black/50 md:hidden transition-opacity duration-300 ease-out ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           />
           <aside
-            className="fixed left-0 top-0 bottom-0 z-[70] w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl"
+            aria-hidden={!sidebarOpen}
+            className={`fixed left-0 top-0 bottom-0 z-[70] w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"}`}
             aria-label="Liste des chants"
           >
             <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
@@ -737,7 +738,7 @@ export default function AdminClient() {
           </aside>
         </>
       )}
-      {sidebarOpen && !isMobile && (
+      {!isMobile && (
         <>
           <div
             role="button"
@@ -745,10 +746,11 @@ export default function AdminClient() {
             aria-label="Fermer le panneau"
             onClick={() => setSidebarOpen(false)}
             onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
-            className="fixed inset-0 z-[65] bg-black/30 hidden md:block"
+            className={`fixed inset-0 z-[65] bg-black/30 hidden md:block transition-opacity duration-300 ease-out ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           />
           <aside
-            className="fixed left-0 top-0 bottom-0 z-[70] w-72 xl:w-80 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 overflow-hidden backdrop-blur-sm shadow-xl hidden md:flex"
+            aria-hidden={!sidebarOpen}
+            className={`fixed left-0 top-0 bottom-0 z-[70] w-72 xl:w-80 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-950/95 overflow-hidden backdrop-blur-sm shadow-xl hidden md:flex transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"}`}
             aria-label="Liste des chants"
           >
           <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
