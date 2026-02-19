@@ -72,6 +72,36 @@ html:not(.dark) .chordpro-editor .cm-gutters {
   border-radius: 6px;
 }
 
+/* Ascenseurs personnalisés (sidebar + zone contenu) */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(113 113 122 / 0.6) transparent;
+}
+.dark * {
+  scrollbar-color: rgb(113 113 122 / 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(113 113 122 / 0.4);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(113 113 122 / 0.6);
+}
+.dark *::-webkit-scrollbar-thumb {
+  background: rgb(113 113 122 / 0.35);
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: rgb(113 113 122 / 0.55);
+}
+
 /* Overlay bruit subtil (style Fretlist) */
 .noise-overlay {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");

@@ -1,271 +1,37 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { parseChordPro } from "@/chordpro/parse";
 import { AudioPlayerBar } from "@/components/AudioPlayerBar";
 import { ChordProPreview } from "@/chordpro/render";
 import { transposeChordProText } from "@/lib/transposeChord";
-import { useFavorites } from "@/components/FavoritesProvider";
-import { useClickOutside } from "@/lib/useClickOutside";
-import type { ExportFormat } from "@/lib/export";
 
 type Props = {
   chordproText: string;
-  referenceUrl: string | null;
   audioUrl: string | null;
   songId: string;
+  transposeSemitones: number;
   onEditClick: () => void;
-  onImport?: () => void;
-  onExport?: (format: ExportFormat) => void;
-  onDelete?: () => void;
   /** Quand true, le player ne doit pas chevaucher le volet gauche (sidebar) */
   sidebarOpen?: boolean;
 };
 
 export function SongReadingView({
   chordproText,
-  referenceUrl,
   audioUrl,
   songId,
+  transposeSemitones,
   onEditClick,
-  onImport,
-  onExport,
-  onDelete,
   sidebarOpen = false,
 }: Props) {
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const [transposeSemitones, setTransposeSemitones] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const isFav = isFavorite(songId);
-  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
-
   const displayText = useMemo(
     () => (transposeSemitones === 0 ? chordproText : transposeChordProText(chordproText, transposeSemitones)),
     [chordproText, transposeSemitones]
   );
   const doc = useMemo(() => parseChordPro(displayText), [displayText]);
 
-  async function handleToggleFavorite() {
-    await toggleFavorite(songId);
-  }
-
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Barre d'outils lecture */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">Transposer :</span>
-            <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
-                title="-1 demi-ton"
-              >
-                −
-              </button>
-              <span className="flex h-9 min-w-[2.25rem] items-center justify-center text-sm font-medium text-white">
-                {transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}
-              </span>
-              <button
-                type="button"
-                onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
-                title="+1 demi-ton"
-              >
-                +
-              </button>
-              {transposeSemitones !== 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setTransposeSemitones(0)}
-                  className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-zinc-800/80 px-2 text-xs font-medium text-white hover:bg-zinc-700 transition-colors ml-1"
-                  title="Réinitialiser"
-                >
-                  Reset
-                </button>
-              ) : null}
-            </div>
-          </div>
-          {referenceUrl?.trim() ? (
-            <a
-              href={referenceUrl.trim().startsWith("http") ? referenceUrl.trim() : `https://${referenceUrl.trim()}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
-              title="Ouvrir le lien"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </a>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleToggleFavorite}
-            className={`rounded-lg p-2 transition-colors ${
-              isFav
-                ? "bg-accent-500/20 text-accent-500 dark:text-accent-400 hover:bg-accent-500/30"
-                : "bg-zinc-800/80 text-white hover:bg-zinc-700"
-            }`}
-            title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill={isFav ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative" ref={menuRef}>
-            {(onImport || onExport || onDelete) ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((o) => !o)}
-                  className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
-                  title="Menu"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="5" cy="12" r="1" />
-                    <circle cx="12" cy="12" r="1" />
-                    <circle cx="19" cy="12" r="1" />
-                  </svg>
-                </button>
-                {menuOpen ? (
-                  <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
-                    {onImport ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onImport();
-                          setMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="17 8 12 3 7 8" />
-                          <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        Import
-                      </button>
-                    ) : null}
-                    {onExport ? (
-                      <>
-                        <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                          Export
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onExport("chordpro");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
-                          ChordPro
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onExport("txt");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                            <line x1="10" y1="9" x2="8" y2="9" />
-                          </svg>
-                          TXT (paroles)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onExport("pdf");
-                            setMenuOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                            <line x1="10" y1="9" x2="8" y2="9" />
-                          </svg>
-                          PDF
-                        </button>
-                      </>
-                    ) : null}
-                    {onDelete ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onDelete();
-                          setMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M3 6h18" />
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          <line x1="10" y1="11" x2="10" y2="17" />
-                          <line x1="14" y1="11" x2="14" y2="17" />
-                        </svg>
-                        Supprimer le chant
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-          <Link
-            href={`/live/${songId}`}
-            className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
-            title="Mode live"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-          </Link>
-          <button
-            type="button"
-            onClick={onEditClick}
-            className="rounded-lg bg-accent-500 p-2 text-white hover:bg-accent-600 transition-colors"
-            title="Modifier le chant"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
       {/* Contenu : preview - sans encadré visible */}
       <div className={`flex-1 min-h-0 overflow-auto px-4 py-6 ${audioUrl ? "pb-24" : ""}`}>
         <div className="mx-auto max-w-2xl">

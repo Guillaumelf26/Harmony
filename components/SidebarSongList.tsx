@@ -79,9 +79,8 @@ export function SidebarSongList({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-none border-0 bg-white/90 dark:bg-zinc-950/30">
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
-        <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Harmony</div>
-        {!hideCollapseButton ? (
+      {!hideCollapseButton ? (
+        <div className="flex shrink-0 items-center justify-end border-b border-zinc-200 dark:border-zinc-800 px-3 py-2">
           <button
             onClick={onToggleCollapsed}
             className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
@@ -96,8 +95,8 @@ export function SidebarSongList({
               collapsed ? "»" : "«"
             )}
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {collapsed ? null : (
         <div className="p-3 space-y-2">

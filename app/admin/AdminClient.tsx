@@ -9,8 +9,8 @@ import { parseChordPro } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
 import { SongReadingView } from "@/components/SongReadingView";
-import { Toolbar } from "@/components/Toolbar";
 import { SessionMenu } from "@/components/SessionMenu";
+import { useFavorites } from "@/components/FavoritesProvider";
 import { FullscreenToggle } from "@/components/FullscreenToggle";
 import { EditorPane, type EditorPaneRef } from "@/components/EditorPane";
 import { getChordsForKey } from "@/lib/chordsByKey";
@@ -18,6 +18,7 @@ import { appendChordExtension } from "@/lib/chordAtCursor";
 import type { ChordAtCursorInfo } from "@/components/EditorPane";
 import { tagsFromUnknown } from "@/lib/validators";
 import { useClickOutside } from "@/lib/useClickOutside";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { exportChordPro, exportTxt, exportPdf, type ExportFormat } from "@/lib/export";
 import { LibrarySelector } from "@/components/LibrarySelector";
 type SongListItem = {
@@ -54,10 +55,24 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 
 export default function AdminClient() {
   const router = useRouter();
+
+  // Empêcher le scroll global (body/html) pour que sidebar et contenu aient des scrolls indépendants
+  useEffect(() => {
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
   const searchParams = useSearchParams();
   const { data: session } = useSession();
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(true);
+  const [editModeTab, setEditModeTab] = useState<"editor" | "preview">("editor");
   const [previewWidth, setPreviewWidth] = useState(470);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [query, setQuery] = useState("");
@@ -76,7 +91,11 @@ export default function AdminClient() {
   const editAudioRef = useRef<HTMLAudioElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const [readingMenuOpen, setReadingMenuOpen] = useState(false);
   const editMenuRef = useRef<HTMLDivElement>(null);
+  const readingMenuRef = useRef<HTMLDivElement>(null);
+  const [transposeSemitones, setTransposeSemitones] = useState(0);
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [libraries, setLibraries] = useState<{ owned: Array<{ id: string; name: string; _count?: { songs: number } }>; shared: Array<{ id: string; name: string; _count?: { songs: number } }> }>({ owned: [], shared: [] });
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
@@ -161,6 +180,7 @@ export default function AdminClient() {
   }, [activeChordInfo, updatePopupPosition]);
 
   useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen);
+  useClickOutside(readingMenuRef, () => setReadingMenuOpen(false), readingMenuOpen);
 
   async function refreshLibraries() {
     const res = await fetch("/api/libraries", { cache: "no-store" });
@@ -194,6 +214,7 @@ export default function AdminClient() {
     if (cached) {
       setSelectedId(id);
       setSelectedSong(cached);
+      setTransposeSemitones(0);
       setEditorText(cached.chordproText ?? "");
       setEditMode(false);
       setMetaTitle(cached.title ?? "");
@@ -223,6 +244,7 @@ export default function AdminClient() {
       }
       setSelectedId(id);
       setSelectedSong(song);
+      setTransposeSemitones(0);
       setEditorText(song.chordproText ?? "");
       setEditMode(false);
       setMetaTitle(song.title ?? "");
@@ -243,6 +265,10 @@ export default function AdminClient() {
     void refreshLibraries();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   useEffect(() => {
     void refreshList();
@@ -598,7 +624,7 @@ export default function AdminClient() {
   }, [editorText, selectedId]);
 
   return (
-    <div className="flex min-h-svh overflow-hidden text-zinc-900 dark:text-zinc-100">
+    <div className="flex h-svh overflow-hidden text-zinc-900 dark:text-zinc-100">
       {/* Background style Fretlist/Cisco : cercles floutés light + dark */}
       <div
         className="fixed inset-0 -z-10 bg-white dark:bg-[#030712]"
@@ -622,8 +648,67 @@ export default function AdminClient() {
         <div className="noise-overlay pointer-events-none fixed inset-0" aria-hidden />
       </div>
 
-      {/* Sidebar gauche : dans le flux flex (style Fretlist), pas en overlay */}
-      {sidebarOpen && (
+      {/* Sidebar gauche : overlay sur mobile (fermeture au clic extérieur), dans le flux sur desktop */}
+      {sidebarOpen && isMobile && (
+        <>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Fermer le panneau"
+            onClick={() => setSidebarOpen(false)}
+            onKeyDown={(e) => e.key === "Enter" && setSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          />
+          <aside
+            className="fixed left-0 top-0 bottom-0 z-50 w-72 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 overflow-hidden backdrop-blur-sm md:hidden shadow-xl"
+            aria-label="Liste des chants"
+          >
+            <div className="shrink-0 p-3 space-y-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
+              <LibrarySelector
+                libraries={libraries}
+                selectedId={selectedLibraryId}
+                onSelect={(id) => {
+                  setSelectedLibraryId(id);
+                  setSidebarOpen(false);
+                }}
+                onJoinLibrary={() => setJoinModalOpen(true)}
+                onCreateLibrary={() => setCreateModalOpen(true)}
+              />
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <SidebarSongList
+                collapsed={false}
+                overlay={false}
+                hideCollapseButton
+                onToggleCollapsed={() => setSidebarOpen(false)}
+                query={query}
+                onQueryChange={setQuery}
+                filterFavorites={filterFavorites}
+                onFilterFavoritesChange={setFilterFavorites}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={(by, order) => {
+                  setSortBy(by);
+                  setSortOrder(order);
+                }}
+                songs={songs}
+                selectedId={selectedId}
+                onSelect={(id) => {
+                  onSelect(id);
+                  setSidebarOpen(false);
+                }}
+                onSongHover={prefetchSong}
+                onSongHoverCancel={cancelPrefetch}
+                onNew={onNew}
+              />
+            </div>
+            <div className="shrink-0 p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-start">
+              <SessionMenu />
+            </div>
+          </aside>
+        </>
+      )}
+      {sidebarOpen && !isMobile && (
         <aside
           className="w-72 xl:w-80 shrink-0 flex flex-col border-r border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 overflow-hidden backdrop-blur-sm"
           aria-label="Liste des chants"
@@ -637,69 +722,121 @@ export default function AdminClient() {
               onCreateLibrary={() => setCreateModalOpen(true)}
             />
           </div>
-          <SidebarSongList
-            collapsed={false}
-            overlay={false}
-            hideCollapseButton
-            onToggleCollapsed={() => setSidebarOpen(false)}
-            query={query}
-            onQueryChange={setQuery}
-            filterFavorites={filterFavorites}
-            onFilterFavoritesChange={setFilterFavorites}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={(by, order) => {
-              setSortBy(by);
-              setSortOrder(order);
-            }}
-            songs={songs}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            onSongHover={prefetchSong}
-            onSongHoverCancel={cancelPrefetch}
-            onNew={onNew}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <SidebarSongList
+              collapsed={false}
+              overlay={false}
+              hideCollapseButton
+              onToggleCollapsed={() => setSidebarOpen(false)}
+              query={query}
+              onQueryChange={setQuery}
+              filterFavorites={filterFavorites}
+              onFilterFavoritesChange={setFilterFavorites}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortChange={(by, order) => {
+                setSortBy(by);
+                setSortOrder(order);
+              }}
+              songs={songs}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              onSongHover={prefetchSong}
+              onSongHoverCancel={cancelPrefetch}
+              onNew={onNew}
+            />
+          </div>
+          <div className="shrink-0 p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-start">
+            <SessionMenu />
+          </div>
         </aside>
       )}
 
       {/* Zone principale : flex-1 min-w-0 pour éviter débordement */}
-      <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
+      <div className="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
         <header className="relative z-10 flex-shrink-0 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/70 backdrop-blur-md">
-          <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-            title={sidebarOpen ? "Replier le panneau" : "Afficher le panneau"}
-          >
-            {sidebarOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="6" x2="20" y2="6" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="18" x2="20" y2="18" />
-              </svg>
-            )}
-          </button>
-          {!editMode ? (
-            <Toolbar
-              dirty={dirty}
-              saving={saving}
-              editMode={editMode}
-              onSave={onSave}
-              onCancel={onCancel}
-            />
-          ) : (
-            <div className="flex-1" />
-          )}
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-between gap-2 px-3 py-2 min-h-[44px]">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 shrink-0"
+              title={sidebarOpen ? "Replier le panneau" : "Afficher le panneau"}
+            >
+              {sidebarOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                </svg>
+              )}
+            </button>
+            <div className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+              {selectedId && !editMode ? (
+                <>
+                  <div className="flex items-center gap-0.5">
+                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700" title="-1 demi-ton">−</button>
+                    <span className="flex h-8 min-w-[2rem] items-center justify-center text-sm font-medium text-white px-1">{transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}</span>
+                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800/80 text-sm font-medium text-white hover:bg-zinc-700" title="+1 demi-ton">+</button>
+                    {transposeSemitones !== 0 ? <button type="button" onClick={() => setTransposeSemitones(0)} className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-zinc-800/80 px-1.5 text-xs font-medium text-white hover:bg-zinc-700 ml-0.5" title="Réinitialiser">Reset</button> : null}
+                  </div>
+                  {selectedSong?.referenceUrl?.trim() ? (
+                    <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Ouvrir le lien">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                    </a>
+                  ) : null}
+                  <button type="button" onClick={() => void toggleFavorite(selectedId)} className={`rounded-lg p-2 shrink-0 ${isFavorite(selectedId) ? "bg-accent-500/20 text-accent-500 dark:text-accent-400" : "bg-zinc-800/80 text-white hover:bg-zinc-700"}`} title={isFavorite(selectedId) ? "Retirer des favoris" : "Ajouter aux favoris"}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={isFavorite(selectedId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                  </button>
+                  <div className="relative" ref={readingMenuRef}>
+                    <button type="button" onClick={() => setReadingMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Menu">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+                    </button>
+                    {readingMenuOpen ? (
+                      <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                        <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
+                        <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
+                        <button type="button" onClick={() => { onExport("chordpro"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
+                        <button type="button" onClick={() => { onExport("txt"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
+                        <button type="button" onClick={() => { onExport("pdf"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
+                        <button type="button" onClick={() => { onDelete(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <Link href={selectedId ? `/live/${selectedId}` : "#"} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Mode live">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                  </Link>
+                  <button type="button" onClick={() => setEditMode(true)} className="rounded-lg bg-accent-500 p-2 text-white hover:bg-accent-600 shrink-0" title="Modifier le chant">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                  </button>
+                </>
+              ) : editMode ? (
+                <div className="flex items-center gap-2">
+                  {(dirty || editMode) && onCancel ? <button onClick={onCancel} className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900">Cancel</button> : null}
+                  {dirty ? <button onClick={onSave} disabled={saving} className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-600 disabled:opacity-60" title="Ctrl/Cmd+S">Save</button> : null}
+                  <div className="relative" ref={editMenuRef}>
+                    <button type="button" onClick={() => setEditMenuOpen((o) => !o)} className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 shrink-0" title="Menu">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+                    </button>
+                    {editMenuOpen ? (
+                      <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
+                        <button type="button" onClick={() => { onImportClick(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
+                        <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
+                        <button type="button" onClick={() => { onExport("chordpro"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
+                        <button type="button" onClick={() => { onExport("txt"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
+                        <button type="button" onClick={() => { onExport("pdf"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
+                        <button type="button" onClick={() => { onDelete(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <FullscreenToggle />
-            <SessionMenu />
           </div>
-        </div>
         </header>
 
         {/* Ligne éditeur + preview (style Fretlist) */}
@@ -729,142 +866,47 @@ export default function AdminClient() {
                 <SongReadingView
                   key={selectedId}
                   chordproText={editorText}
-                  referenceUrl={selectedSong?.referenceUrl ?? null}
                   audioUrl={selectedSong?.audioUrl ?? null}
                   songId={selectedId}
+                  transposeSemitones={transposeSemitones}
                   onEditClick={() => setEditMode(true)}
-                  onImport={onImportClick}
-                  onExport={onExport}
-                  onDelete={onDelete}
                   sidebarOpen={sidebarOpen}
                 />
               ) : (
               <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
-              {/* Toolbar édition : Save, Cancel, menu ... */}
-              <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 shrink-0">
-                <div className="relative" ref={editMenuRef}>
+              {/* Onglets Éditeur / Preview sur mobile */}
+              {isMobile && (
+                <div className="flex shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80">
                   <button
                     type="button"
-                    onClick={() => setEditMenuOpen((o) => !o)}
-                    className="rounded-lg bg-zinc-800/80 p-2 text-white hover:bg-zinc-700 transition-colors"
-                    title="Menu"
+                    onClick={() => setEditModeTab("editor")}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      editModeTab === "editor"
+                        ? "border-b-2 border-accent-500 text-accent-600 dark:text-accent-400"
+                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="5" cy="12" r="1" />
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="19" cy="12" r="1" />
-                    </svg>
+                    Éditeur
                   </button>
-                  {editMenuOpen ? (
-                    <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] rounded-xl bg-zinc-950 shadow-2xl py-2 border border-zinc-800/80">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onImportClick();
-                          setEditMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="17 8 12 3 7 8" />
-                          <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        Import
-                      </button>
-                      <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                        Export
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onExport("chordpro");
-                          setEditMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        ChordPro
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onExport("txt");
-                          setEditMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                          <line x1="10" y1="9" x2="8" y2="9" />
-                        </svg>
-                        TXT (paroles)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onExport("pdf");
-                          setEditMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-100 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                          <line x1="10" y1="9" x2="8" y2="9" />
-                        </svg>
-                        PDF
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onDelete();
-                          setEditMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-800/80 flex items-center gap-3 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M3 6h18" />
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          <line x1="10" y1="11" x2="10" y2="17" />
-                          <line x1="14" y1="11" x2="14" y2="17" />
-                        </svg>
-                        Supprimer le chant
-                      </button>
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setEditModeTab("preview")}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      editModeTab === "preview"
+                        ? "border-b-2 border-accent-500 text-accent-600 dark:text-accent-400"
+                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    }`}
+                  >
+                    Preview
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  {(dirty || editMode) && onCancel ? (
-                    <button
-                      onClick={onCancel}
-                      className="rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/40 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900"
-                    >
-                      Cancel
-                    </button>
-                  ) : null}
-                  {dirty ? (
-                    <button
-                      onClick={onSave}
-                      disabled={saving}
-                      className="rounded-lg bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-sm font-medium text-white hover:from-accent-600 hover:to-accent-700 disabled:opacity-60 disabled:from-accent-500 disabled:to-accent-600 transition-all"
-                      title="Ctrl/Cmd+S"
-                    >
-                      Save
-                    </button>
-                  ) : null}
+              )}
+              {isMobile && editModeTab === "preview" ? (
+                <div className="flex-1 min-h-0 overflow-auto p-4">
+                  <ChordProPreview doc={previewDoc} />
                 </div>
-              </div>
+              ) : (
+              <div className="flex flex-col min-h-0 flex-1 overflow-hidden">
               {/* Contenu éditeur : formulaire scrollable + éditeur qui prend l'espace restant (évite ascenseur inutile) */}
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
               <div className="shrink-0 overflow-y-auto max-h-[45vh]">
@@ -1081,11 +1123,13 @@ export default function AdminClient() {
               </div>
               </div>
               )}
+              </div>
+              )}
             </div>
           </div>
 
-          {/* Barre de redimensionnement (style Fretlist) - visible uniquement en mode édition */}
-          {editMode && previewOpen && (
+          {/* Barre de redimensionnement (style Fretlist) - visible uniquement en mode édition, masquée sur mobile */}
+          {editMode && previewOpen && !isMobile && (
             <div
               role="separator"
               aria-orientation="vertical"
@@ -1097,8 +1141,8 @@ export default function AdminClient() {
             </div>
           )}
 
-          {/* Preview live : largeur redimensionnable (style Fretlist) - visible uniquement en mode édition */}
-          {editMode ? (previewOpen ? (
+          {/* Preview live : largeur redimensionnable (style Fretlist) - visible uniquement en mode édition, masquée sur mobile (onglets à la place) */}
+          {editMode && !isMobile ? (previewOpen ? (
             <aside
               className="shrink-0 overflow-auto border-l border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-950/30"
               style={{ width: previewWidth }}
