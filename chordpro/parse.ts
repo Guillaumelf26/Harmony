@@ -22,6 +22,30 @@ export type ChordProDocument = {
 
 const directiveRe = /^\{([^:}]+)\s*:\s*(.*?)\s*\}$/;
 
+const METADATA_DIRECTIVE_RE = /^\s*\{\s*(?:title|artist|key)\s*:\s*.*?\s*\}\s*$/i;
+
+/** Retire les lignes {title}, {artist}, {key} du texte ChordPro. */
+export function stripMetadataDirectives(text: string): string {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const filtered = lines.filter((line) => !METADATA_DIRECTIVE_RE.test(line));
+  return filtered.join("\n").trim();
+}
+
+/** Ajoute les directives en tête si les valeurs sont non vides. */
+export function prependMetadataDirectives(
+  body: string,
+  title: string,
+  artist: string,
+  key: string
+): string {
+  const parts: string[] = [];
+  if (title.trim()) parts.push(`{title: ${title.trim()}}`);
+  if (artist.trim()) parts.push(`{artist: ${artist.trim()}}`);
+  if (key.trim()) parts.push(`{key: ${key.trim()}}`);
+  if (parts.length === 0) return body.trim();
+  return parts.join("\n") + (body.trim() ? "\n\n" + body.trim() : "");
+}
+
 export function parseChordPro(input: string): ChordProDocument {
   const doc: ChordProDocument = { lines: [] };
   const lines = input.replace(/\r\n/g, "\n").split("\n");

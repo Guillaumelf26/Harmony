@@ -16,18 +16,26 @@
 }
 
 /* Fond éditeur ChordPro aligné sur les encadrés (titre, etc.) */
+.chordpro-editor {
+  --chordpro-editor-font-size: 16px;
+}
 .chordpro-editor .cm-editor,
 .chordpro-editor .cm-scroller,
 .chordpro-editor .cm-content {
   background-color: transparent !important;
 }
+.chordpro-editor .cm-content,
+.chordpro-editor .cm-line {
+  font-size: var(--chordpro-editor-font-size) !important;
+}
+/* Aligner les marges avec les champs Titre/Artiste (px-3 = 12px) */
+.chordpro-editor .cm-content {
+  padding-left: 0.75rem;
+  padding-top: 0.75rem;
+}
 
 /* Éviter le zoom automatique sur mobile (iOS Safari zoom si font-size < 16px) */
 @media (max-width: 768px) {
-  .chordpro-editor .cm-content,
-  .chordpro-editor .cm-line {
-    font-size: 16px !important;
-  }
   /* Champs de formulaire et recherche (éviter zoom iOS) */
   input[type="text"],
   input[type="email"],
@@ -46,6 +54,11 @@
 }
 .chordpro-editor .cm-gutters {
   background-color: transparent !important;
+}
+
+/* Scroll éditeur : ascenseur uniquement quand le contenu dépasse la hauteur visible */
+.chordpro-editor .cm-scroller {
+  overflow: auto !important;
 }
 
 /* Thème clair : texte plus foncé, sélection de ligne plus douce */

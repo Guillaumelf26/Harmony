@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseChordPro } from "@/chordpro/parse";
-import { transposeChordProText } from "@/lib/transposeChord";
+import { transposeChordProText, transposeChord } from "@/lib/transposeChord";
 import { LiveToolbar } from "./LiveToolbar";
 import { LiveContent } from "./LiveContent";
 import { AudioPlayerBar } from "@/components/AudioPlayerBar";
@@ -77,6 +77,15 @@ export function LiveView({
     [chordproText, transposeSemitones]
   );
   const doc = useMemo(() => parseChordPro(displayText), [displayText]);
+  const keyDisplayTransposed = useMemo(
+    () =>
+      transposeSemitones === 0
+        ? keyDisplay
+        : keyDisplay
+          ? transposeChord(keyDisplay, transposeSemitones)
+          : null,
+    [keyDisplay, transposeSemitones]
+  );
 
   function handleBack() {
     router.push(`/admin?song=${songId}`);
@@ -120,7 +129,7 @@ export function LiveView({
         canFullscreen={canFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
       />
-      <LiveContent doc={doc} title={title} artist={artist} keyDisplay={keyDisplay} hasAudio={!!audioUrl} />
+      <LiveContent doc={doc} title={title} artist={artist} keyDisplay={keyDisplayTransposed} hasAudio={!!audioUrl} />
       {audioUrl ? (
         <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center px-4 py-4 backdrop-blur-md bg-black/40">
           <AudioPlayerBar src={audioUrl} />

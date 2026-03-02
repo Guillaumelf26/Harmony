@@ -124,13 +124,13 @@ export function SidebarSongList({
             ) : null}
           </div>
           {(onSortChange || onFilterFavoritesChange) ? (
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex gap-2 w-full min-w-0 items-stretch">
           {onFilterFavoritesChange ? (
-            <div className="relative" ref={filterRef}>
+            <div className="relative shrink-0" ref={filterRef}>
               <button
                 type="button"
                 onClick={() => setFilterOpen((o) => !o)}
-                className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[100px] justify-between"
+                className="h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 justify-between"
               >
                 <span>{filterFavorites === "favorites" ? "Favoris" : "Tout"}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={filterOpen ? "rotate-180" : ""}>
@@ -167,14 +167,14 @@ export function SidebarSongList({
             </div>
           ) : null}
           {onSortChange ? (
-            <div className="relative" ref={sortRef}>
-              <div className="relative">
+            <div className="relative flex-1 min-w-0" ref={sortRef}>
+              <div className="relative h-full">
                 <button
                   type="button"
                   onClick={() => setSortOpen((o) => !o)}
-                  className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 min-w-[140px] justify-between"
+                  className="h-full w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500 flex items-center gap-2 justify-between"
                 >
-                  <span>{currentLabel}</span>
+                  <span className="truncate">{currentLabel}</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={sortOpen ? "rotate-180" : ""}>
                     <polyline points="6 9 12 15 18 9" />
                   </svg>

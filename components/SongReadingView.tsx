@@ -4,10 +4,13 @@ import { useMemo } from "react";
 import { parseChordPro } from "@/chordpro/parse";
 import { AudioPlayerBar } from "@/components/AudioPlayerBar";
 import { ChordProPreview } from "@/chordpro/render";
-import { transposeChordProText } from "@/lib/transposeChord";
+import { transposeChordProText, transposeChord } from "@/lib/transposeChord";
 
 type Props = {
   chordproText: string;
+  title?: string;
+  artist?: string | null;
+  keyDisplay?: string | null;
   audioUrl: string | null;
   songId: string;
   transposeSemitones: number;
@@ -18,6 +21,9 @@ type Props = {
 
 export function SongReadingView({
   chordproText,
+  title = "",
+  artist = null,
+  keyDisplay = null,
   audioUrl,
   songId,
   transposeSemitones,
@@ -30,6 +36,24 @@ export function SongReadingView({
     [chordproText, transposeSemitones]
   );
   const doc = useMemo(() => parseChordPro(displayText), [displayText]);
+  const keyDisplayTransposed = useMemo(
+    () =>
+      transposeSemitones === 0
+        ? keyDisplay
+        : keyDisplay
+          ? transposeChord(keyDisplay, transposeSemitones)
+          : null,
+    [keyDisplay, transposeSemitones]
+  );
+  const displayDoc = useMemo(
+    () => ({
+      ...doc,
+      title: doc.title || title || undefined,
+      artist: (doc.artist || artist) ?? undefined,
+      key: (doc.key || keyDisplayTransposed) ?? undefined,
+    }),
+    [doc, title, artist, keyDisplayTransposed]
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -38,7 +62,7 @@ export function SongReadingView({
         <div className="mx-auto max-w-2xl min-w-0">
           <div className="border border-transparent bg-transparent p-6">
             <ChordProPreview
-              doc={doc}
+              doc={displayDoc}
               renderTitleRight={onToggleFavorite ? () => (
                 <button
                   type="button"

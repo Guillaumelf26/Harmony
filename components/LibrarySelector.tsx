@@ -59,7 +59,7 @@ export function LibrarySelector({
         </svg>
       </button>
       {open ? (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80 max-h-64 overflow-auto outline-none">
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80 max-h-80 overflow-y-auto overflow-x-hidden outline-none">
           {libraries.owned.length > 0 ? (
             <>
               <div className="px-3 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">

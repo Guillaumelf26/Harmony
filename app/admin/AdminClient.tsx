@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { parseChordPro } from "@/chordpro/parse";
+import { parseChordPro, stripMetadataDirectives, prependMetadataDirectives } from "@/chordpro/parse";
 import { ChordProPreview } from "@/chordpro/render";
 import { SidebarSongList } from "@/components/SidebarSongList";
 import { SongReadingView } from "@/components/SongReadingView";
@@ -76,13 +76,6 @@ export default function AdminClient() {
   const [editModeTab, setEditModeTab] = useState<"editor" | "preview">("editor");
   const [previewWidth, setPreviewWidth] = useState(470);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const [maxEditorHeight, setMaxEditorHeight] = useState(600);
-  useEffect(() => {
-    const update = () => setMaxEditorHeight(Math.min(window.innerHeight * 0.6, 800));
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
   const [query, setQuery] = useState("");
   const [filterFavorites, setFilterFavorites] = useState<"all" | "favorites">("all");
   const [sortBy, setSortBy] = useState<"title" | "artist" | "updatedAt">("updatedAt");
@@ -101,6 +94,9 @@ export default function AdminClient() {
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const [readingMenuOpen, setReadingMenuOpen] = useState(false);
   const [addToSubmenuOpen, setAddToSubmenuOpen] = useState(false);
+  const [addToSheetOpen, setAddToSheetOpen] = useState(false);
+  const [addToSheetClosing, setAddToSheetClosing] = useState(false);
+  const [addToSheetEntered, setAddToSheetEntered] = useState(false);
   const [copyingToLibraryId, setCopyingToLibraryId] = useState<string | null>(null);
   const editMenuRef = useRef<HTMLDivElement>(null);
   const readingMenuRef = useRef<HTMLDivElement>(null);
@@ -161,6 +157,15 @@ export default function AdminClient() {
 
   const debouncedText = useDebouncedValue(editorText, 200);
   const previewDoc = useMemo(() => parseChordPro(debouncedText), [debouncedText]);
+  const displayDoc = useMemo(
+    () => ({
+      ...previewDoc,
+      title: metaTitle || previewDoc.title || undefined,
+      artist: metaArtist || previewDoc.artist || undefined,
+      key: metaKey || previewDoc.key || undefined,
+    }),
+    [previewDoc, metaTitle, metaArtist, metaKey]
+  );
   const chordButtons = useMemo(() => getChordsForKey(metaKey), [metaKey]);
 
   const updatePopupPosition = useCallback(() => {
@@ -196,10 +201,29 @@ export default function AdminClient() {
   }, [activeChordInfo, updatePopupPosition]);
 
   useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen, editMenuContentRef);
-  useClickOutside(readingMenuRef, () => { setReadingMenuOpen(false); setAddToSubmenuOpen(false); }, readingMenuOpen, readingMenuContentRef);
+  useClickOutside(readingMenuRef, () => { setReadingMenuOpen(false); setAddToSubmenuOpen(false); setAddToSheetOpen(false); setAddToSheetClosing(false); }, readingMenuOpen, readingMenuContentRef);
   useEffect(() => {
     if (!readingMenuOpen) setAddToSubmenuOpen(false);
   }, [readingMenuOpen]);
+
+  function closeAddToSheet() {
+    setAddToSheetClosing(true);
+    window.setTimeout(() => {
+      setAddToSheetOpen(false);
+      setAddToSheetClosing(false);
+      setAddToSheetEntered(false);
+    }, 300);
+  }
+
+  useEffect(() => {
+    if (addToSheetOpen && !addToSheetClosing) {
+      setAddToSheetEntered(false);
+      const t = requestAnimationFrame(() => requestAnimationFrame(() => setAddToSheetEntered(true)));
+      return () => cancelAnimationFrame(t);
+    } else if (!addToSheetOpen) {
+      setAddToSheetEntered(false);
+    }
+  }, [addToSheetOpen, addToSheetClosing]);
 
   useEffect(() => {
     if (readingMenuOpen && readingMenuRef.current && typeof document !== "undefined") {
@@ -257,7 +281,7 @@ export default function AdminClient() {
       setSelectedId(id);
       setSelectedSong(cached);
       setTransposeSemitones(0);
-      setEditorText(cached.chordproText ?? "");
+      setEditorText(stripMetadataDirectives(cached.chordproText ?? ""));
       setEditMode(false);
       setMetaTitle(cached.title ?? "");
       setMetaArtist(cached.artist ?? "");
@@ -287,7 +311,7 @@ export default function AdminClient() {
       setSelectedId(id);
       setSelectedSong(song);
       setTransposeSemitones(0);
-      setEditorText(song.chordproText ?? "");
+      setEditorText(stripMetadataDirectives(song.chordproText ?? ""));
       setEditMode(false);
       setMetaTitle(song.title ?? "");
       setMetaArtist(song.artist ?? "");
@@ -457,7 +481,7 @@ export default function AdminClient() {
             artist,
             key,
             tags,
-            chordproText: editorText,
+            chordproText: stripMetadataDirectives(editorText),
             referenceUrl: metaReferenceUrl.trim() || null,
           }),
         });
@@ -489,7 +513,7 @@ export default function AdminClient() {
           artist,
           key,
           tags,
-          chordproText: editorText,
+          chordproText: stripMetadataDirectives(editorText),
           referenceUrl: metaReferenceUrl.trim() || null,
         }),
       });
@@ -542,11 +566,11 @@ export default function AdminClient() {
   }
 
   function onExport(format: ExportFormat) {
-    const text = editorText;
+    const fullText = prependMetadataDirectives(editorText, metaTitle, metaArtist, metaKey);
     const title = metaTitle || selectedSong?.title || "song";
-    if (format === "chordpro") exportChordPro(text, title);
-    else if (format === "txt") exportTxt(text, title);
-    else if (format === "pdf") exportPdf(text, title);
+    if (format === "chordpro") exportChordPro(fullText, title);
+    else if (format === "txt") exportTxt(fullText, title);
+    else if (format === "pdf") exportPdf(fullText, title);
   }
 
   function insertChordAtCursor(chord: string) {
@@ -651,7 +675,7 @@ export default function AdminClient() {
             artist,
             key,
             tags: [],
-            chordproText: text,
+            chordproText: stripMetadataDirectives(text),
           }),
         });
         if (res.ok) {
@@ -914,15 +938,19 @@ export default function AdminClient() {
                                   Ouvrir le lien
                                 </a>
                               ) : null}
-                              <div className="relative" onMouseEnter={() => setAddToSubmenuOpen(true)} onMouseLeave={() => setAddToSubmenuOpen(false)}>
-                                <button type="button" className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3 justify-between">
+                              <div className="relative" onMouseEnter={() => !isMobile && setAddToSubmenuOpen(true)} onMouseLeave={() => !isMobile && setAddToSubmenuOpen(false)}>
+                                <button
+                                  type="button"
+                                  onClick={() => isMobile && (setReadingMenuOpen(false), setAddToSheetOpen(true))}
+                                  className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3 justify-between touch-manipulation min-h-[44px]"
+                                >
                                   <span className="flex items-center gap-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
                                     Ajouter à...
                                   </span>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="m9 18 6-6-6-6" /></svg>
                                 </button>
-                                {addToSubmenuOpen ? (
+                                {addToSubmenuOpen && !isMobile ? (
                                   <div className="absolute left-full top-0 ml-1 min-w-[200px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80">
                                     <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-not-allowed flex items-center gap-3" aria-disabled="true">
                                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60"><path d="M8 6h10a2 2 0 0 1 2 2v10" /><path d="M4 6a2 2 0 0 1 2-2h2" /><path d="M2 12v6a2 2 0 0 0 2 2h2" /><path d="M18 18a2 2 0 0 0 2 2h2" /></svg>
@@ -972,6 +1000,75 @@ export default function AdminClient() {
                           </div>,
                           document.body
                         )
+                      : null}
+                    {addToSheetOpen && isMobile && typeof document !== "undefined"
+                      ? (() => {
+                          const libraryToExclude = selectedSong?.libraryId ?? selectedLibraryId;
+                          const otherLibs = [...libraries.owned, ...libraries.shared.filter((l) => (l as { role?: string }).role === "EDITOR")].filter((l) => l.id !== libraryToExclude);
+                          return createPortal(
+                            <div className="fixed inset-0 z-[200]" aria-modal="true" role="dialog" aria-labelledby="add-to-sheet-title">
+                              <div
+                                className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${addToSheetClosing || !addToSheetEntered ? "opacity-0" : "opacity-100"}`}
+                                onClick={closeAddToSheet}
+                                aria-hidden="true"
+                              />
+                              <div
+                                className={`absolute inset-x-0 bottom-0 rounded-t-2xl bg-white dark:bg-zinc-950 shadow-2xl border-t border-zinc-200 dark:border-zinc-800/80 max-h-[70vh] overflow-y-auto transition-transform duration-300 ease-out ${addToSheetClosing || !addToSheetEntered ? "translate-y-full" : "translate-y-0"}`}
+                              >
+                                <div className="sticky top-0 pt-3 pb-2 px-4 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/80">
+                                  <div className="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 mx-auto mb-3" aria-hidden="true" />
+                                  <div className="flex items-center justify-between">
+                                    <h2 id="add-to-sheet-title" className="text-lg font-medium text-zinc-900 dark:text-zinc-100">Ajouter à une bibliothèque</h2>
+                                    <button type="button" onClick={closeAddToSheet} className="p-2 -m-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Fermer">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="py-2">
+                                  <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-not-allowed flex items-center gap-3 min-h-[44px]" aria-disabled="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60"><path d="M8 6h10a2 2 0 0 1 2 2v10" /><path d="M4 6a2 2 0 0 1 2-2h2" /><path d="M2 12v6a2 2 0 0 0 2 2h2" /><path d="M18 18a2 2 0 0 0 2 2h2" /></svg>
+                                    Une setlist (bientôt)
+                                  </div>
+                                  <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Une bibliothèque</div>
+                                  {otherLibs.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400 min-h-[44px]">Aucune autre bibliothèque</div>
+                                  ) : (
+                                    otherLibs.map((lib) => (
+                                      <button
+                                        key={lib.id}
+                                        type="button"
+                                        disabled={copyingToLibraryId !== null}
+                                        onClick={async () => {
+                                          if (!selectedId) return;
+                                          setCopyingToLibraryId(lib.id);
+                                          try {
+                                            const res = await fetch(`/api/songs/${selectedId}/copy-to-library`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetLibraryId: lib.id }) });
+                                            if (res.ok) {
+                                              closeAddToSheet();
+                                              await refreshLibraries();
+                                              window.alert(`Chant ajouté à « ${lib.name} ».`);
+                                            } else {
+                                              const err = await res.json().catch(() => ({}));
+                                              window.alert(err?.message || "Impossible d'ajouter le chant à cette bibliothèque.");
+                                            }
+                                          } catch {
+                                            window.alert("Erreur réseau.");
+                                          } finally {
+                                            setCopyingToLibraryId(null);
+                                          }
+                                        }}
+                                        className="w-full px-4 py-3 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 active:bg-zinc-200 dark:active:bg-zinc-700 flex items-center gap-3 disabled:opacity-60 touch-manipulation min-h-[44px]"
+                                      >
+                                        {copyingToLibraryId === lib.id ? "Ajout..." : lib.name}
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>,
+                            document.body
+                          );
+                        })()
                       : null}
                   </div>
                   <button type="button" onClick={() => setEditMode(true)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-500 text-white hover:bg-accent-600" title="Modifier le chant">
@@ -1047,6 +1144,9 @@ export default function AdminClient() {
                 <SongReadingView
                   key={selectedId}
                   chordproText={editorText}
+                  title={selectedSong?.title ?? ""}
+                  artist={selectedSong?.artist ?? null}
+                  keyDisplay={selectedSong?.key ?? null}
                   audioUrl={selectedSong?.audioUrl ?? null}
                   songId={selectedId}
                   transposeSemitones={transposeSemitones}
@@ -1085,13 +1185,13 @@ export default function AdminClient() {
               )}
               {isMobile && editModeTab === "preview" ? (
                 <div className="flex-1 min-h-0 overflow-auto p-4">
-                  <ChordProPreview doc={previewDoc} />
+                  <ChordProPreview doc={displayDoc} />
                 </div>
               ) : (
               <div className="flex flex-col min-h-0 flex-1 overflow-hidden h-full">
-              {/* Contenu éditeur : colonne scrollable (style Fretlist) + éditeur hauteur fixe pour scroll interne */}
-              <div className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden">
-              <div className="shrink-0">
+              {/* Contenu éditeur : colonne fixe (pas de scroll global), éditeur pleine hauteur avec scroll interne */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="shrink-0 overflow-y-auto max-h-[40vh] min-h-0">
               <div className="mx-auto max-w-3xl space-y-4 px-4 py-4">
               {/* Titre + Artiste : flex row comme Fretlist */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -1286,18 +1386,10 @@ export default function AdminClient() {
 
               </div>
               </div>
-              {/* Éditeur ChordPro : hauteur adaptée au contenu (lignes), avec min/max pour scroll interne si long */}
-              <div className="shrink-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4">
+              {/* Éditeur ChordPro : prend tout l'espace restant, scroll interne via CodeMirror */}
+              <div className="flex-1 min-h-0 flex flex-col mx-auto max-w-3xl w-full px-4 pb-4 min-w-0">
                 <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2 shrink-0">Paroles & accords</div>
-                <div
-                  className="min-h-[200px] overflow-hidden"
-                  style={{
-                    height: Math.min(
-                      Math.max((editorText ?? "").split("\n").length * 22 + 100, 200),
-                      maxEditorHeight
-                    ),
-                  }}
-                >
+                <div className="flex-1 min-h-0 overflow-hidden">
                   <EditorPane
                     ref={editorRef}
                     value={editorText}
@@ -1354,7 +1446,7 @@ export default function AdminClient() {
               </button>
             </div>
             <div className="p-4">
-              <ChordProPreview doc={previewDoc} />
+              <ChordProPreview doc={displayDoc} />
             </div>
           </aside>
           ) : (

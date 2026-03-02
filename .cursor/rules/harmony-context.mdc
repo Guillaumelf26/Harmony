@@ -12,6 +12,14 @@ alwaysApply: true
 - **Styles** : Tailwind, thème clair/sombre (cookie + `lib/theme.ts`). Classes `dark:` pour le mode sombre.
 - **Éditeur** : `EditorPane` (CodeMirror @uiw/react-codemirror) avec hauteur mesurée (ResizeObserver) pour un scroll interne correct.
 
+## UX/UI mobile (apps modernes)
+
+L'app doit offrir la même fluidité et le même confort qu'Instagram, les apps bancaires ou les apps natives :
+- **Mobile (< md / 768px)** : bottom sheets au lieu de menus déroulants latéraux qui débordent. Menus secondaires = panneau qui monte du bas, avec backdrop et fermeture au clic externe.
+- **Navigation fluide** : transitions animées (`transition-transform`, `duration-300`), pas de changements brusques. `touch-manipulation` sur les boutons tactiles.
+- **Pas de débordement** : éviter `left-full` / submenus horizontaux sur mobile ; privilégier drill-down ou bottom sheet.
+- **Cibles tactiles** : zones de tap larges (min 44px), espacement suffisant entre les actions.
+
 ## Routines d'environnement (à suivre par l'IA)
 
 - **Pousser sur Railway (déploiement prod)**  

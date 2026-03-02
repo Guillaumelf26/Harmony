@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseChordPro } from "@/chordpro/parse";
+import { parseChordPro, stripMetadataDirectives, prependMetadataDirectives } from "@/chordpro/parse";
 
 describe("parseChordPro", () => {
   it("parses directives (title/artist/key)", () => {
@@ -12,6 +12,31 @@ describe("parseChordPro", () => {
   it("keeps empty lines", () => {
     const doc = parseChordPro("\n\nHello\n\n");
     expect(doc.lines.filter((l) => l.type === "empty").length).toBeGreaterThan(0);
+  });
+
+  it("stripMetadataDirectives removes title/artist/key lines", () => {
+    const input = "{title: My Song}\n{artist: Me}\n{key: Am}\n\n[C]Verse";
+    expect(stripMetadataDirectives(input)).toBe("[C]Verse");
+  });
+
+  it("stripMetadataDirectives preserves other content", () => {
+    const input = "[Am]Bonjour le monde";
+    expect(stripMetadataDirectives(input)).toBe("[Am]Bonjour le monde");
+  });
+
+  it("prependMetadataDirectives adds directives when values provided", () => {
+    const body = "[C]Verse";
+    const result = prependMetadataDirectives(body, "My Song", "Me", "Am");
+    expect(result).toContain("{title: My Song}");
+    expect(result).toContain("{artist: Me}");
+    expect(result).toContain("{key: Am}");
+    expect(result).toContain("[C]Verse");
+  });
+
+  it("prependMetadataDirectives omits empty values", () => {
+    const body = "[C]Verse";
+    const result = prependMetadataDirectives(body, "Title", "", "");
+    expect(result).toBe("{title: Title}\n\n[C]Verse");
   });
 
   it("parses chord segments", () => {
