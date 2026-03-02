@@ -30,6 +30,7 @@ type SongListItem = {
 
 type Song = {
   id: string;
+  libraryId: string;
   title: string;
   artist: string | null;
   key: string | null;
@@ -116,6 +117,7 @@ export default function AdminClient() {
   const [joinCode, setJoinCode] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createLibraryName, setCreateLibraryName] = useState("");
+  const [newSongModalOpen, setNewSongModalOpen] = useState(false);
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null);
   const songCacheRef = useRef<Map<string, Song>>(new Map());
 
@@ -414,6 +416,24 @@ export default function AdminClient() {
     setEditorText("{title: Nouveau chant}\n\n");
     setActiveChordInfo(null);
     setDirty(true);
+  }
+
+  function openNewSongModal() {
+    if (!selectedLibraryId) {
+      window.alert("Sélectionnez une bibliothèque pour créer un chant.");
+      return;
+    }
+    const canEdit = libraries.owned.some((l) => l.id === selectedLibraryId) ||
+      libraries.shared.some((l) => l.id === selectedLibraryId);
+    if (!canEdit) {
+      window.alert("Vous n'avez pas les droits d'édition sur cette bibliothèque.");
+      return;
+    }
+    if (dirty) {
+      const ok = window.confirm("Changements non sauvegardés. Créer un nouveau chant quand même ?");
+      if (!ok) return;
+    }
+    setNewSongModalOpen(true);
   }
 
   async function onSave() {
@@ -752,7 +772,7 @@ export default function AdminClient() {
                 }}
                 onSongHover={prefetchSong}
                 onSongHoverCancel={cancelPrefetch}
-                onNew={onNew}
+                onNew={openNewSongModal}
               />
             </div>
             <div className="shrink-0 p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-end">
@@ -806,7 +826,7 @@ export default function AdminClient() {
               onSelect={onSelect}
               onSongHover={prefetchSong}
               onSongHoverCancel={cancelPrefetch}
-              onNew={onNew}
+              onNew={openNewSongModal}
             />
           </div>
           <div className="shrink-0 p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-end">
@@ -894,7 +914,6 @@ export default function AdminClient() {
                                   Ouvrir le lien
                                 </a>
                               ) : null}
-                              <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
                               <div className="relative" onMouseEnter={() => setAddToSubmenuOpen(true)} onMouseLeave={() => setAddToSubmenuOpen(false)}>
                                 <button type="button" className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3 justify-between">
                                   <span className="flex items-center gap-3">
@@ -911,7 +930,8 @@ export default function AdminClient() {
                                     </div>
                                     <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Une bibliothèque</div>
                                     {(() => {
-                                      const otherLibs = [...libraries.owned, ...libraries.shared.filter((l) => (l as { role?: string }).role === "EDITOR")].filter((l) => l.id !== selectedLibraryId);
+                                      const libraryToExclude = selectedSong?.libraryId ?? selectedLibraryId;
+                                      const otherLibs = [...libraries.owned, ...libraries.shared.filter((l) => (l as { role?: string }).role === "EDITOR")].filter((l) => l.id !== libraryToExclude);
                                       if (otherLibs.length === 0) {
                                         return <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400">Aucune autre bibliothèque</div>;
                                       }
@@ -924,6 +944,7 @@ export default function AdminClient() {
                                             if (res.ok) {
                                               setReadingMenuOpen(false);
                                               setAddToSubmenuOpen(false);
+                                              await refreshLibraries();
                                               window.alert(`Chant ajouté à « ${lib.name} ».`);
                                             } else {
                                               const err = await res.json().catch(() => ({}));
@@ -968,7 +989,6 @@ export default function AdminClient() {
                     {editMenuOpen && editMenuPos && typeof document !== "undefined"
                       ? createPortal(
                           <div ref={editMenuContentRef} className="fixed z-[200] min-w-[180px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80" style={{ top: editMenuPos.top, left: editMenuPos.left }}>
-                            <button type="button" onClick={() => { onImportClick(); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
                             <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
                             <button type="button" onClick={() => { onExport("chordpro"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
                             <button type="button" onClick={() => { onExport("txt"); setEditMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
@@ -1478,6 +1498,47 @@ export default function AdminClient() {
                 className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white hover:bg-accent-600"
               >
                 Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {newSongModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={() => setNewSongModalOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Ajouter un chant</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Nouveau chant vide ou importer un fichier ChordPro.</p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNewSongModalOpen(false);
+                  onNew();
+                }}
+                className="w-full rounded-lg bg-accent-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-600"
+              >
+                Nouveau chant vide
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewSongModalOpen(false);
+                  onImportClick();
+                }}
+                className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Importer un fichier
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewSongModalOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 mt-2"
+              >
+                Annuler
               </button>
             </div>
           </div>
