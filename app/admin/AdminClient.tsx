@@ -99,6 +99,8 @@ export default function AdminClient() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const [readingMenuOpen, setReadingMenuOpen] = useState(false);
+  const [addToSubmenuOpen, setAddToSubmenuOpen] = useState(false);
+  const [copyingToLibraryId, setCopyingToLibraryId] = useState<string | null>(null);
   const editMenuRef = useRef<HTMLDivElement>(null);
   const readingMenuRef = useRef<HTMLDivElement>(null);
   const readingMenuContentRef = useRef<HTMLDivElement>(null);
@@ -192,7 +194,10 @@ export default function AdminClient() {
   }, [activeChordInfo, updatePopupPosition]);
 
   useClickOutside(editMenuRef, () => setEditMenuOpen(false), editMenuOpen, editMenuContentRef);
-  useClickOutside(readingMenuRef, () => setReadingMenuOpen(false), readingMenuOpen, readingMenuContentRef);
+  useClickOutside(readingMenuRef, () => { setReadingMenuOpen(false); setAddToSubmenuOpen(false); }, readingMenuOpen, readingMenuContentRef);
+  useEffect(() => {
+    if (!readingMenuOpen) setAddToSubmenuOpen(false);
+  }, [readingMenuOpen]);
 
   useEffect(() => {
     if (readingMenuOpen && readingMenuRef.current && typeof document !== "undefined") {
@@ -864,9 +869,9 @@ export default function AdminClient() {
               {selectedId && !editMode ? (
                 <>
                   <div className="flex items-center shrink-0 gap-1.5">
-                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800/80 text-sm font-medium text-zinc-800 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700" title="-1 demi-ton">−</button>
+                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.max(-12, n - 1))} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800/80 text-zinc-800 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700" title="-1 demi-ton" aria-label="Transposer -1 demi-ton"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg></button>
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center text-sm font-medium text-zinc-900 dark:text-white tabular-nums">{transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}</span>
-                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800/80 text-sm font-medium text-zinc-800 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700" title="+1 demi-ton">+</button>
+                    <button type="button" onClick={() => setTransposeSemitones((n) => Math.min(12, n + 1))} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800/80 text-zinc-800 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700" title="+1 demi-ton" aria-label="Transposer +1 demi-ton"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6" /></svg></button>
                     <span className="flex h-9 w-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-transparent">
                       {transposeSemitones !== 0 ? (
                         <button type="button" onClick={() => setTransposeSemitones(0)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800/80 text-zinc-800 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700" title="Réinitialiser"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg></button>
@@ -881,19 +886,68 @@ export default function AdminClient() {
                     </button>
                     {readingMenuOpen && readingMenuPos && typeof document !== "undefined"
                       ? createPortal(
-                          <div ref={readingMenuContentRef} className="fixed z-[200] min-w-[180px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80" style={{ top: readingMenuPos.top, left: readingMenuPos.left }}>
-                            {selectedSong?.referenceUrl?.trim() ? (
-                              <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" onClick={() => setReadingMenuOpen(false)} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                Ouvrir le lien
-                              </a>
-                            ) : null}
-                            <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
-                            <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
+                          <div ref={readingMenuContentRef} className="fixed z-[200]" style={{ top: readingMenuPos.top, left: readingMenuPos.left }}>
+                            <div className="min-w-[180px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80">
+                              {selectedSong?.referenceUrl?.trim() ? (
+                                <a href={selectedSong.referenceUrl.trim().startsWith("http") ? selectedSong.referenceUrl.trim() : `https://${selectedSong.referenceUrl.trim()}`} target="_blank" rel="noopener noreferrer" onClick={() => setReadingMenuOpen(false)} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                  Ouvrir le lien
+                                </a>
+                              ) : null}
+                              <button type="button" onClick={() => { onImportClick(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>Import</button>
+                              <div className="relative" onMouseEnter={() => setAddToSubmenuOpen(true)} onMouseLeave={() => setAddToSubmenuOpen(false)}>
+                                <button type="button" className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3 justify-between">
+                                  <span className="flex items-center gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
+                                    Ajouter à...
+                                  </span>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="m9 18 6-6-6-6" /></svg>
+                                </button>
+                                {addToSubmenuOpen ? (
+                                  <div className="absolute left-full top-0 ml-1 min-w-[200px] rounded-xl bg-white dark:bg-zinc-950 shadow-2xl py-2 border border-zinc-200 dark:border-zinc-800/80">
+                                    <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 cursor-not-allowed flex items-center gap-3" aria-disabled="true">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 opacity-60"><path d="M8 6h10a2 2 0 0 1 2 2v10" /><path d="M4 6a2 2 0 0 1 2-2h2" /><path d="M2 12v6a2 2 0 0 0 2 2h2" /><path d="M18 18a2 2 0 0 0 2 2h2" /></svg>
+                                      Une setlist (bientôt)
+                                    </div>
+                                    <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Une bibliothèque</div>
+                                    {(() => {
+                                      const otherLibs = [...libraries.owned, ...libraries.shared.filter((l) => (l as { role?: string }).role === "EDITOR")].filter((l) => l.id !== selectedLibraryId);
+                                      if (otherLibs.length === 0) {
+                                        return <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400">Aucune autre bibliothèque</div>;
+                                      }
+                                      return otherLibs.map((lib) => (
+                                        <button key={lib.id} type="button" disabled={copyingToLibraryId !== null} onClick={async () => {
+                                          if (!selectedId) return;
+                                          setCopyingToLibraryId(lib.id);
+                                          try {
+                                            const res = await fetch(`/api/songs/${selectedId}/copy-to-library`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetLibraryId: lib.id }) });
+                                            if (res.ok) {
+                                              setReadingMenuOpen(false);
+                                              setAddToSubmenuOpen(false);
+                                              window.alert(`Chant ajouté à « ${lib.name} ».`);
+                                            } else {
+                                              const err = await res.json().catch(() => ({}));
+                                              window.alert(err?.message || "Impossible d'ajouter le chant à cette bibliothèque.");
+                                            }
+                                          } catch {
+                                            window.alert("Erreur réseau.");
+                                          } finally {
+                                            setCopyingToLibraryId(null);
+                                          }
+                                        }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3 disabled:opacity-60">
+                                          {copyingToLibraryId === lib.id ? "Ajout..." : lib.name}
+                                        </button>
+                                      ));
+                                    })()}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase">Export</div>
                             <button type="button" onClick={() => { onExport("chordpro"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>ChordPro</button>
                             <button type="button" onClick={() => { onExport("txt"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>TXT</button>
                             <button type="button" onClick={() => { onExport("pdf"); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>PDF</button>
                             <button type="button" onClick={() => { onDelete(); setReadingMenuOpen(false); }} className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>Supprimer</button>
+                            </div>
                           </div>,
                           document.body
                         )

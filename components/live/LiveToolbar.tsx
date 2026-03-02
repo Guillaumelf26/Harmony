@@ -38,10 +38,11 @@ export function LiveToolbar({
             <button
               type="button"
               onClick={() => onTransposeChange(Math.max(-12, transposeSemitones - 1))}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-lg border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 hover:bg-zinc-800 transition-colors"
               title="-1 demi-ton"
+              aria-label="Transposer -1 demi-ton"
             >
-              −
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
             </button>
             <span className="min-w-[2rem] text-center text-sm font-medium text-zinc-300">
               {transposeSemitones === 0 ? "0" : transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones}
@@ -49,10 +50,11 @@ export function LiveToolbar({
             <button
               type="button"
               onClick={() => onTransposeChange(Math.min(12, transposeSemitones + 1))}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-lg border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 hover:bg-zinc-800 transition-colors"
               title="+1 demi-ton"
+              aria-label="Transposer +1 demi-ton"
             >
-              +
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6" /></svg>
             </button>
             {transposeSemitones !== 0 ? (
               <button
