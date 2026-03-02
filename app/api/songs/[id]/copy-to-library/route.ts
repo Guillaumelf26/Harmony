@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { getServerAuthSession } from "@/lib/auth";
 import { isAuthenticatedSession } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
@@ -72,7 +73,7 @@ export async function POST(req: Request, { params }: Params) {
       key: songData.key,
       tempo: songData.tempo,
       timeSignature: songData.timeSignature,
-      tags: songData.tags,
+      tags: songData.tags as Prisma.InputJsonValue,
       chordproText: songData.chordproText,
       referenceUrl: songData.referenceUrl,
       audioUrl: songData.audioUrl,
