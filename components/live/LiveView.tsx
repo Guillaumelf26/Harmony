@@ -7,6 +7,7 @@ import { transposeChordProText, transposeChord } from "@/lib/transposeChord";
 import { LiveToolbar } from "./LiveToolbar";
 import { LiveContent } from "./LiveContent";
 import { AudioPlayerBar } from "@/components/AudioPlayerBar";
+import { useWakeLock } from "@/lib/useWakeLock";
 
 function isIOSStandalone() {
   if (typeof window === "undefined") return false;
@@ -42,6 +43,8 @@ export function LiveView({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showIOSHint, setShowIOSHint] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
+
+  useWakeLock(true);
 
   useEffect(() => {
     setCanFullscreen(document.fullscreenEnabled);

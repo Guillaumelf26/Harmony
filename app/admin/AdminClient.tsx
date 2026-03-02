@@ -18,6 +18,7 @@ import type { ChordAtCursorInfo } from "@/components/EditorPane";
 import { tagsFromUnknown } from "@/lib/validators";
 import { useClickOutside } from "@/lib/useClickOutside";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useWakeLock } from "@/lib/useWakeLock";
 import { exportChordPro, exportTxt, exportPdf, type ExportFormat } from "@/lib/export";
 import { LibrarySelector } from "@/components/LibrarySelector";
 type SongListItem = {
@@ -84,6 +85,8 @@ export default function AdminClient() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [editMode, setEditMode] = useState(false);
+
+  useWakeLock(!!selectedId && !editMode);
   const [editorText, setEditorText] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
