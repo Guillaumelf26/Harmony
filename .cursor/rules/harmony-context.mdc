@@ -1,0 +1,32 @@
+---
+description: Contexte du projet Harmony (stack, conventions, langue)
+alwaysApply: true
+---
+
+# Projet Harmony
+
+- **Stack** : Next.js 14 (App Router), React 18, Prisma, Next-Auth, Tailwind CSS. Déploiement Railway.
+- **Règles** : Répondre en **français** à l'utilisateur. Pas d'emojis sauf si demandé.
+- **Front** : Composants dans `components/`, pages dans `app/`. ChordPro : parsing dans `chordpro/`, rendu avec `ChordProPreview`.
+- **Back** : API routes dans `app/api/`, modèles Prisma dans `prisma/schema.prisma`.
+- **Styles** : Tailwind, thème clair/sombre (cookie + `lib/theme.ts`). Classes `dark:` pour le mode sombre.
+- **Éditeur** : `EditorPane` (CodeMirror @uiw/react-codemirror) avec hauteur mesurée (ResizeObserver) pour un scroll interne correct.
+
+## Routines d'environnement (à suivre par l'IA)
+
+- **Pousser sur Railway (déploiement prod)**  
+  1. Vérifier l'état du repo : `git status`.  
+  2. Ajouter les fichiers pertinents : `git add ...`.  
+  3. Créer un commit clair (en français) : `git commit -m "..."`.  
+  4. Pousser sur la branche principale : `git push origin main`.  
+  5. Railway est connecté au repo GitHub : **tout push sur `main` déclenche un nouveau build et déploiement**.
+
+- **Libérer le port 3000 (Windows / PowerShell)**  
+  - Si un process occupe le port 3000 :  
+    1. Récupérer le PID éventuel :  
+       `Get-NetTCPConnection -LocalPort 3000 | Select-Object -First 1 -ExpandProperty OwningProcess`  
+    2. Si un PID est trouvé, tuer le process :  
+       `Stop-Process -Id <PID> -Force`  
+  - Variante (si on sait que c'est un process `node` local) :  
+    `Get-Process node | Stop-Process -Force`
+
